@@ -149,8 +149,17 @@
 
 
 #| Animation 4 (custom)
-	"Two black circles move in a square formation (only hitting corners) until
-	they collide, at which point they stop and disappear."
+	"A black ball bounces endlessly up and down."
 |#
-(define anim-sample4 "Wait, what?")
+(define anim-sample4 (list
+		       (make-WHILE true (list
+					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 1 0 5))
+					  (make-WHILE (make-CLEAR? 'bcirc) (list
+									     (make-UDTOBJ 'bcirc)))
+					  (make-DELOBJ 'bcirc)
+					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
+					  (make-WHILE (make-CLEAR? 'bcirc) (list
+									     (make-UDTOBJ 'bcirc)))
+					  (make-DELOBJ 'bcirc)))))
+					  
 
