@@ -98,9 +98,8 @@
 		       (make-LABEL 'loop1)		;; Demonstrate GOTO functionality
 		       (make-UDTOBJ 'rcirc)
 		       (make-IFCOND (make-COLLIDE? 'rcirc 'bwall)
-				    (make-GOTO 'collision)
-				    (make-GOTO 'loop1))
-		       (make-LABEL 'collision)
+				    empty
+				    (list (make-GOTO 'loop1)))
 		       (make-DELOBJ 'bwall)
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
 		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
@@ -128,7 +127,24 @@
 	it hits the red rectangle, after which the orange circle jumps to a random
 	location and stops."
 |#
-(define anim-sample3 "!")
+(define anim-sample3 (list
+		       (make-ADDOBJ (make-object 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
+		       (make-ADDOBJ (make-object 'grect (make-GENRECT 50 750 'green) 25 540 0 0))
+		       (make-LABEL 'loop1)
+		       (make-UDTOBJ 'ocirc)
+		       (make-IFCOND (make-COLLIDE? 'ocirc 'grect)
+				    empty
+				    (list (make-GOTO 'loop1)))
+		       (make-ADDOBJ (make-object 'rrect (make-GENRECT 540 50 'red) 750 25 0 0))
+		       (make-DELOBJ 'ocirc)
+		       (make-ADDOBJ (make-object 'ocirc (make-GENCIRCLE 20 'orange) 100 740 5 0))
+		       (make-LABEL 'loop2)
+		       (make-UDTOBJ 'ocirc)
+		       (make-IFCOND (make-COLLIDE? 'ocirc 'rrect)
+				    empty
+				    (list (make-GOTO 'loop2)))
+		       (make-STOPOBJ 'ocirc)
+		       (make-JMPOBJRAND 'ocirc)))
 
 
 
