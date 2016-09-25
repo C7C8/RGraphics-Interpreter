@@ -8,6 +8,8 @@
 
 ; A cmd is one of:
 ;  -(make-JMPOBJ object number number)		-Jump object to x,y
+;  -(make-JMPOBJRAND object)			-Jump object to random coords
+;  -(make-STOPOBJ object)			-Stop object from movement
 ;  -(make-ADDOBJ object)			-Add object
 ;  -(make-UDTOBJ object)			-Update object
 ;  -(make-DELOBJ object)			-Delete object
@@ -25,17 +27,22 @@
 ;
 ; An object is one of
 ;  -symbol
-;  -(make-entity symbol graphic posx posy velx vely)
+;  -(make-entity symbol graphic number number number number)
 ;
 ; A graphic is one of
 ;  -symbol
 ;  -(make-GENCIRCLE number symbol)
 ;  -(make-GENRECT number number symbol)
-;  -[a user-specified image]
 
 
 ; A JMPOBJ is (make-JMPOBJ object number number)
 (define-struct JMPOBJ (obj nx ny))
+
+; A JMPOBJ is (make-JMPOBJRAND object)
+(define-struct JMPOBJRAND (obj))
+
+; A STOPOBJ is (make-STOPOBJ object)
+(define-struct STOPOBJ (obj))
 
 ; A ADDOBJ is (make-ADDOBJ object)
 (define-struct ADDOBJ (obj))
@@ -75,3 +82,6 @@
 
 ; A GENRECT is (make-GENRECT number number symbol)
 (define-struct GENRECT (h w color))
+
+; An object is (make-object symbol graphic number number number number)
+(define-struct object (name sprite posx posy velx vely))
