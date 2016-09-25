@@ -85,3 +85,38 @@
 
 ; An object is (make-object symbol graphic number number number number)
 (define-struct object (name sprite posx posy velx vely))
+
+
+#| Animation 1: 
+	"A red ball moving at a angle towards the blue wall until it hits the wall. 
+	At that point, the wall disappears and the ball moves back towards the left 
+	edge of the canvas, stopping when it hits the left edge of the canvas."
+|#
+(define anim-sample1 "Hello ")
+
+
+
+#| Animation 2:
+	"A purple circle jumping to random locations around the canvas until it hits 
+	the top edge of the canvas."
+|#
+(define anim-sample2 "World")
+
+
+
+#| Animation 3:
+	"An orange circle dropping straight down until it hits the green rectangle.
+	At that point, the red rectangle appears and the circle moves right until
+	it hits the red rectangle, after which the orange circle jumps to a random
+	location and stops."
+|#
+(define anim-sample3 "!")
+
+
+
+#| Animation 4 (custom)
+	"Two black circles move in a square formation (only hitting corners) until
+	they collide, at which point they stop and disappear."
+|#
+(define anim-sample4 "Wait, what?")
+
