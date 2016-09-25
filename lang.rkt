@@ -14,7 +14,7 @@
 ;  -(make-UDTOBJ object)			-Update object
 ;  -(make-DELOBJ object)			-Delete object
 ;  -(make-COLLIDE? object object)		-Object colliding with object?
-;  -(make-EDGE? object)				-Object colliding with edge?
+;  -(make-CLEAR? object)			-Object not colliding with edge?
 ;  -(make-WHILE cmd list[cmd])			-Do while cmd returns true
 ;  -(make-IFCOND cmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
 ;  -(make-DEFUN symbol list[cmd])		-Define function
@@ -56,14 +56,14 @@
 ; A COLLIDE? is (make-COLLIDE? object object)
 (define-struct COLLIDE? (obj1 obj2))
 
-; A EDGE? is (make-EDGE? object)
-(define-struct EDGE? (obj))
+; A CLEAR? is (make-CLEAR? object)
+(define-struct CLEAR? (obj))
 
 ; A WHILE is (make-WHILE cmd list[cmd])
 (define-struct WHILE (cnd cmds))
 
 ; A IFCOND is (make-IFCOND cmd list[cmd] list[cmd])
-(define-struct (IFCOND cnd ctrue cfalse))
+(define-struct IFCOND (cnd ctrue cfalse))
 
 ; A DEFUN is (make-DEFUN symbol number list[cmd])
 (define-struct DEFUN (name cmds))
@@ -100,7 +100,11 @@
 	"A purple circle jumping to random locations around the canvas until it hits 
 	the top edge of the canvas."
 |#
-(define anim-sample2 "World")
+(define anim-sample2 (list
+		       (make-ADDOBJ (make-object 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
+		       (make-WHILE (make-CLEAR? 'pcirc) (list
+							 (make-JMPOBJRAND 'pcirc)))
+		       (make-STOPOBJ 'pcirc)))
 
 
 
