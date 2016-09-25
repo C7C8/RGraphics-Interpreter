@@ -88,11 +88,25 @@
 
 
 #| Animation 1: 
-	"A red ball moving at a angle towards the blue wall until it hits the wall. 
+	"A red ball moving at a angle towards a blue wall until it hits the wall. 
 	At that point, the wall disappears and the ball moves back towards the left 
 	edge of the canvas, stopping when it hits the left edge of the canvas."
 |#
-(define anim-sample1 "Hello ")
+(define anim-sample1 (list
+		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 100 100 5 3))
+		       (make-ADDOBJ (make-object 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
+		       (make-LABEL 'loop1)		;; Demonstrate GOTO functionality
+		       (make-UDTOBJ 'rcirc)
+		       (make-IFCOND (make-COLLIDE? 'rcirc 'bwall)
+				    (make-GOTO 'collision)
+				    (make-GOTO 'loop1))
+		       (make-LABEL 'collision)
+		       (make-DELOBJ 'bwall)
+		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
+		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
+		       (make-WHILE (CLEAR? 'rcirc)
+				   (make-UDTOBJ 'rcirc))
+		       (make-STOPOBJ 'rcirc)))
 
 
 
