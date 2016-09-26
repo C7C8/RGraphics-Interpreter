@@ -17,8 +17,6 @@
 ;  -(make-CLEAR? object)			-Object not colliding with edge?
 ;  -(make-WHILE cmd list[cmd])			-Do while cmd returns true
 ;  -(make-IFCOND cmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
-;  -(make-DEFUN symbol list[cmd])		-Define function
-;  -(make-CALL symbol)				-Call function
 ;  -(make-GOTO symbol)				-Goto label
 ;  -(make-LABEL symbol)				-Define label
 ;  -(make-GENCIRCLE number symbol)		-Generate circle
@@ -64,12 +62,6 @@
 
 ; A IFCOND is (make-IFCOND cmd list[cmd] list[cmd])
 (define-struct IFCOND (cnd ctrue cfalse))
-
-; A DEFUN is (make-DEFUN symbol number list[cmd])
-(define-struct DEFUN (name cmds))
-
-; A CALL is (make-CALL symbol)
-(define-struct CALL (name))
 
 ; A GOTO is (make-GOTO symbol)
 (define-struct GOTO (label))
