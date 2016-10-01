@@ -6,6 +6,10 @@
 ; =======================
 
 
+; =====================
+; || LANGUAGE DESIGN ||
+; =====================
+
 ; A cmd is one of:
 ;  -(make-JMPOBJ object number number)		-Jump object to x,y
 ;  -(make-JMPOBJRAND object)			-Jump object to random coords
@@ -17,8 +21,6 @@
 ;  -(make-CLEAR? object)			-Object not colliding with edge?
 ;  -(make-WHILE cmd list[cmd])			-Do while cmd returns true
 ;  -(make-IFCOND cmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
-;  -(make-GOTO symbol)				-Goto label
-;  -(make-LABEL symbol)				-Define label
 ;  -(make-GENCIRCLE number symbol)		-Generate circle
 ;  -(make-GENRECT number number symbol)		-Generate rectangle
 ;
@@ -63,12 +65,6 @@
 ; A IFCOND is (make-IFCOND cmd list[cmd] list[cmd])
 (define-struct IFCOND (cnd ctrue cfalse))
 
-; A GOTO is (make-GOTO symbol)
-(define-struct GOTO (label))
-
-; A LABEL is (make-LABEL symbol)
-(define-struct LABEL (name))
-
 ; A GENCIRCLE is (make-GENCIRCLE number symbol)
 (define-struct GENCIRCLE (rad color))
 
@@ -77,6 +73,12 @@
 
 ; An object is (make-object symbol graphic number number number number)
 (define-struct object (name sprite posx posy velx vely))
+
+
+
+; ========================
+; || EXAMPLE ANIMATIONS ||
+; ========================
 
 
 #| Animation 1: 
@@ -153,5 +155,7 @@
 					  (make-WHILE (make-CLEAR? 'bcirc) (list
 									     (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)))))
-					  
 
+; =================
+; || INTERPRETER ||
+; =================
