@@ -1,5 +1,6 @@
 #!/usr/bin/racket
 #lang racket		;; These lines required to run the program without DrRacket
+(require test-engine/racket-tests)
 
 ; =======================
 ; || Christopher Myers ||
@@ -21,6 +22,7 @@
 ;  -(make-CLEAR? object)			-Object not colliding with edge?
 ;  -(make-WHILE cmd list[cmd])			-Do while cmd returns true
 ;  -(make-IFCOND cmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
+;  -(make-NOTCOND cmd)				-Inverts the return from any given boolean command.
 ;  -(make-GENCIRCLE number symbol)		-Generate circle
 ;  -(make-GENRECT number number symbol)		-Generate rectangle
 ;
@@ -65,6 +67,9 @@
 ; A IFCOND is (make-IFCOND cmd list[cmd] list[cmd])
 (define-struct IFCOND (cnd ctrue cfalse))
 
+; A NOT is (make-NOTCOND cmd)
+(define-struct NOTCOND (cnd))
+
 ; A GENCIRCLE is (make-GENCIRCLE number symbol)
 (define-struct GENCIRCLE (rad color))
 
@@ -89,11 +94,8 @@
 (define anim-sample1 (list
 		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 100 100 5 3))
 		       (make-ADDOBJ (make-object 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
-		       (make-LABEL 'loop1)		;; Demonstrate GOTO functionality
-		       (make-UDTOBJ 'rcirc)
-		       (make-IFCOND (make-COLLIDE? 'rcirc 'bwall)
-				    empty
-				    (list (make-GOTO 'loop1)))
+		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
+				   (list (make-UDTOBJ 'rcirc)))
 		       (make-DELOBJ 'bwall)
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
 		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
@@ -124,19 +126,13 @@
 (define anim-sample3 (list
 		       (make-ADDOBJ (make-object 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
 		       (make-ADDOBJ (make-object 'grect (make-GENRECT 50 750 'green) 25 540 0 0))
-		       (make-LABEL 'loop1)
-		       (make-UDTOBJ 'ocirc)
-		       (make-IFCOND (make-COLLIDE? 'ocirc 'grect)
-				    empty
-				    (list (make-GOTO 'loop1)))
+		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
+				   (list (make-UDTOBJ 'ocirc)))
 		       (make-ADDOBJ (make-object 'rrect (make-GENRECT 540 50 'red) 750 25 0 0))
 		       (make-DELOBJ 'ocirc)
 		       (make-ADDOBJ (make-object 'ocirc (make-GENCIRCLE 20 'orange) 100 740 5 0))
-		       (make-LABEL 'loop2)
-		       (make-UDTOBJ 'ocirc)
-		       (make-IFCOND (make-COLLIDE? 'ocirc 'rrect)
-				    empty
-				    (list (make-GOTO 'loop2)))
+		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
+				   (list (make-UDTOBJ 'ocirc)))
 		       (make-STOPOBJ 'ocirc)
 		       (make-JMPOBJRAND 'ocirc)))
 
@@ -156,6 +152,99 @@
 									     (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)))))
 
+
+
 ; =================
 ; || INTERPRETER ||
 ; =================
+
+
+; =============================
+; CORE MEMORY FUNCTIONS
+
+
+;; list[object]
+(define core empty)
+
+
+;; in-core?: symbol -> boolean
+;; Consumes a symbol and returns true if that an object by that names exists
+;; in core memory.
+(check-expect (in-core? 'DNE) false) ;; Works because core is defined as empty above.
+(define (in-core? name)
+  (not (empty? (filter (lambda (obj)(symbol=? name (object-name obj))) core))))
+
+
+;; get-object: symbol -> object
+;; Conusmes a symbol and returns the object associated with that symbol.
+;; No test cases because this relies on a global variable.
+(define (get-object name)
+  (if (not (in-core? name))
+    (error (format "Object \"~a\" does not exist!" (symbol->string name))) ;; ooh, this doesn't look like normal racket syntax!
+    (first (filter (lambda (obj)(symbol=? name (object-name obj))) core)))) ;; is symbol->string macro-involved?
+	
+
+;; stor-object: object -> void
+;; Consumes an object and pushes it to core memory, overwriting
+;; anything else under the same name already there. Once again, no test
+;; cases as this too relies on a global variable AND returns void.
+(define (stor-object obj)
+  (set! core
+    (if (in-core? (object-name obj)) ;; Allows for addition of new variables
+      (map (lambda (o)	
+	     (if (symbol=? (object-name o) (object-name obj))
+	       obj ; Replace prior-existing variable under given name
+	       o))
+	   core)
+      (append obj core))))
+
+
+;; del-obj: symbol -> void
+;; Consumes an object name (symbol) and deletes it entirely
+;; from core memory.
+(define (del-obj name)
+  (set! core
+    (map (lambda (obj)
+	   (if (symbol=? (object-name obj) name)
+	     empty
+	     obj)))))
+
+
+; =============================
+; INTERPRETER FUNCTIONS
+; (for real this time!)
+
+
+;; big-crunch: list[cmd] -> void
+;; Runs the program contained within a list of commands.
+#|(define (big-crunch cmdlist)
+  (for-each exec-cmd cmdlist))|#
+
+
+;; exec-cmd: cmd -> void
+;; Executes a given command. Doesn't accept commands that
+;; return booleans.
+#|(define (exec-cmd cmd)
+  (cond [(JMPOBJ? cmd)
+	 ...]
+	[(JMPOBJRAND? cmd)
+	 ...]
+	[(STOPOBJ? cmd)
+	 ...]
+	[(ADDOBJ? cmd)
+	 ...]
+	[(UDTOBJ? cmd)
+	 ...]
+	[(DELOBJ? cmd)
+	 ...]
+	[(WHILE? cmd)
+	 ...]
+	[(IFCOND? cmd)
+	 ...]
+	[(GENCIRCLE? cmd)
+	 ...]
+	[(GENRECT? cmd)
+	 ...]
+	[else
+	  (error "invalid command")]))
+|#
