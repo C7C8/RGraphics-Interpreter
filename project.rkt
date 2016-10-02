@@ -1,6 +1,8 @@
 #!/usr/bin/racket
 #lang racket		;; These lines required to run the program without DrRacket
 (require test-engine/racket-tests)
+(require 2tdp/image)
+(require "world-cs1102.rkt")
 
 ; =======================
 ; || Christopher Myers ||
@@ -180,7 +182,7 @@
 ;; No test cases because this relies on a global variable.
 (define (get-object name)
   (if (not (in-core? name))
-    (error (format "Object \"~a\" does not exist!" (symbol->string name))) ;; ooh, this doesn't look like normal racket syntax!
+    (error (format "Cannot retrieve object \"~a\" - does not exist!" (symbol->string name))) ;; ooh, this doesn't look like normal racket syntax!
     (first (filter (lambda (obj)(symbol=? name (object-name obj))) core)))) ;; is symbol->string macro-involved?
 	
 
@@ -215,52 +217,80 @@
 ; (for real this time!)
 
 
+(define WIN_X 800)
+(define WIN_Y 600)
+
+
 ;; mov-obj: number number symbol -> void
 ;; Consumes two numbers and an object name, and moves
 ;; the object to the coordinates given by the number pair.
-(define (move-obj newx newy name)
-  (stor-object
-    (make-object
-      name
-      newx
-      newy
-      (object-velx (get-object name))
-      (object-vely (get-object name)))))
+(define (move-obj nx ny name)
+  (if (in-core? name)
+    (stor-object
+      (make-object
+        name
+        nx
+        ny
+        (object-velx (get-object name))
+        (object-vely (get-object name))))
+    (error (format "Cannot move object \"~a\" - does not exist!" (symbol->string name)))))
 
 
 
 ;; big-crunch: list[cmd] -> void
 ;; Runs the program contained within a list of commands.
-#|(define (big-crunch cmdlist)
-  (for-each exec-cmd cmdlist))|#
+(define (big-crunch cmdlist)
+  (for-each exec-cmd cmdlist))
 
 
 ;; exec-cmd: cmd -> void
 ;; Executes a given command. Doesn't accept commands that
 ;; return booleans.
-#|(define (exec-cmd cmd)
+(define (exec-cmd cmd)
   (cond [(JMPOBJ? cmd)
-	 
+	 (move-obj (JMPOBJ-name cmd) (JUMPOBJ-nx cmd) (JMPOBJ-ny cmd))]
+
 	[(JMPOBJRAND? cmd)
-	 ...]
+	 (move-obj (JMPOBJ-name cmd) (random WIN_X) (random WIN_Y))]
+
 	[(STOPOBJ? cmd)
-	 ...]
+	 (stor-obj
+	   (make-object
+	     (STOPOBJ-obj cmd)					; Name
+	     (object-sprite (get-object (STOPOBJ-obj cmd)))	; Sp(r)ite
+	     (object-posx (get-object (STOPOBJ-obj cmd)))	; Posx
+	     (object-posy (get-object (STOPOBJ-obj cmd)))	; Posy
+	     0							; Velx
+	     0))]						; Vely
+
 	[(ADDOBJ? cmd)
-	 ...]
-	[(UDTOBJ? cmd)
-	 ...]
+	 (stor-obj (ADDOBJ-obj cmd))]
+
+	[(UDTOBJ? cmd)	; maybe split this off into an exec-UDTOBJ?
+	 (stor-obj
+	   (make-object
+	     (UDTOBJ-obj cmd)					; Name
+	     (object-sprite (get-object (UDTOBJ-obj cmd)))	; Sprite
+	     (+ 
+	       (object-posx (get-object (UDTOBJ-obj cmd)))	; Update posx
+	       (object-velx (get-object (UDTOBJ-obj cmd))))
+	     (+ 
+	       (object-posy (get-object (UDTOBJ-obj cmd)))	; Update posy
+	       (object-vely (get-object (UDTOBJ-obj cmd))))
+	     (object-velx (get-object (UDTOBJ-obj cmd)))	; Velx
+	     (object-vely (get-object (UDTOBJ-obj cmd)))))]	; Vely
+
 	[(DELOBJ? cmd)
-	 ...]
+	 (del-obj (DELOBJ-name cmd))]
+
 	[(WHILE? cmd)
-	 ...]
+	 (exec-while cmd)]
+
 	[(IFCOND? cmd)
-	 ...]
-	[(NOTCOND? cmd)
-	 ...]
-	[(GENCIRCLE? cmd)
-	 ...]
-	[(GENRECT? cmd)
-	 ...]
+	 (if (eval-condcmd (IFCOND-cond cnd))
+	   (big-crunch (IFCOND-ctrue cmd))
+	   (big-crunch (IFCOND-cfalse cmd)))]
+
 	[else
 	  (error "invalid command")]))
-|#
+
