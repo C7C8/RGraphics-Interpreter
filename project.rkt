@@ -215,6 +215,20 @@
 ; (for real this time!)
 
 
+;; mov-obj: number number symbol -> void
+;; Consumes two numbers and an object name, and moves
+;; the object to the coordinates given by the number pair.
+(define (move-obj newx newy name)
+  (stor-object
+    (make-object
+      name
+      newx
+      newy
+      (object-velx (get-object name))
+      (object-vely (get-object name)))))
+
+
+
 ;; big-crunch: list[cmd] -> void
 ;; Runs the program contained within a list of commands.
 #|(define (big-crunch cmdlist)
@@ -226,7 +240,7 @@
 ;; return booleans.
 #|(define (exec-cmd cmd)
   (cond [(JMPOBJ? cmd)
-	 ...]
+	 
 	[(JMPOBJRAND? cmd)
 	 ...]
 	[(STOPOBJ? cmd)
@@ -240,6 +254,8 @@
 	[(WHILE? cmd)
 	 ...]
 	[(IFCOND? cmd)
+	 ...]
+	[(NOTCOND? cmd)
 	 ...]
 	[(GENCIRCLE? cmd)
 	 ...]
