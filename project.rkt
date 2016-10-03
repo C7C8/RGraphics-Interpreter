@@ -99,7 +99,7 @@
 		       (make-DELOBJ 'bwall)
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
 		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
-		       (make-WHILE ((make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
+		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
 				   (make-UDTOBJ 'rcirc))
 		       (make-STOPOBJ 'rcirc)))
 
@@ -111,7 +111,7 @@
 |#
 (define anim-sample2 (list
 		       (make-ADDOBJ (make-object 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
-		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc) (list
+		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc)) (list
 									      (make-JMPOBJRAND 'pcirc)))
 		       (make-STOPOBJ 'pcirc)))
 
@@ -184,11 +184,11 @@
     (first (filter (lambda (obj)(symbol=? name (object-name obj))) core)))) ;; is symbol->string macro-involved?
 	
 
-;; stor-object: object -> void
+;; stor-obj: object -> void
 ;; Consumes an object and pushes it to core memory, overwriting
 ;; anything else under the same name already there. Once again, no test
 ;; cases as this too relies on a global variable AND returns void.
-(define (stor-object obj)
+(define (stor-obj obj)
   (set! core
     (if (in-core? (object-name obj)) ;; Allows for addition of new variables
       (map (lambda (o)	
@@ -224,7 +224,7 @@
 ;; the object to the coordinates given by the number pair.
 (define (move-obj nx ny name)
   (if (in-core? name)
-    (stor-object
+    (stor-obj
       (make-object
         name
         nx
@@ -246,10 +246,10 @@
 ;; return booleans.
 (define (exec-cmd cmd)
   (cond [(JMPOBJ? cmd)
-	 (move-obj (JMPOBJ-name cmd) (JUMPOBJ-nx cmd) (JMPOBJ-ny cmd))]
+	 (move-obj (JMPOBJ-obj cmd) (JMPOBJ-nx cmd) (JMPOBJ-ny cmd))]
 
 	[(JMPOBJRAND? cmd)
-	 (move-obj (JMPOBJ-name cmd) (random WIN_X) (random WIN_Y))]
+	 (move-obj (JMPOBJRAND-obj cmd) (random WIN_X) (random WIN_Y))]
 
 	[(STOPOBJ? cmd)
 	 (stor-obj
@@ -279,13 +279,13 @@
 	     (object-vely (get-object (UDTOBJ-obj cmd)))))]	; Vely
 
 	[(DELOBJ? cmd)
-	 (del-obj (DELOBJ-name cmd))]
+	 (del-obj (DELOBJ-obj cmd))]
 
 	[(WHILE? cmd)
 	 (exec-while cmd)]
 
 	[(IFCOND? cmd)
-	 (if (eval-condcmd (IFCOND-cond cnd))
+	 (if (eval-condcmd (IFCOND-cnd cmd))
 	   (big-crunch (IFCOND-ctrue cmd))
 	   (big-crunch (IFCOND-cfalse cmd)))]
 
@@ -343,5 +343,6 @@
 (define (exec-while cmd)
   (if (eval-condcmd (WHILE-cnd))
     (begin
-      (big-cruch (WHILE-cmds cmd))
-      (exec-while cmd)))) ; no else case. Surely this works fantastically!
+      (big-crunch (WHILE-cmds cmd))
+      (exec-while cmd))
+    (void))) 
