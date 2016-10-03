@@ -1,7 +1,7 @@
 #!/usr/bin/racket
 #lang racket		;; These lines required to run the program without DrRacket
 (require test-engine/racket-tests)
-(require 2tdp/image)
+(require htdp/image)
 (require "world-cs1102.rkt")
 
 ; =======================
@@ -14,27 +14,25 @@
 ; =====================
 
 ; A cmd is one of:
-;  -(make-JMPOBJ object number number)		-Jump object to x,y
-;  -(make-JMPOBJRAND object)			-Jump object to random coords
-;  -(make-STOPOBJ object)			-Stop object from movement
-;  -(make-ADDOBJ object)			-Add object
-;  -(make-UDTOBJ object)			-Update object
-;  -(make-DELOBJ object)			-Delete object
-;  -(make-COLLIDE? object object)		-Object colliding with object?
-;  -(make-CLEAR? object)			-Object not colliding with edge?
-;  -(make-WHILE cmd list[cmd])			-Do while cmd returns true
-;  -(make-IFCOND cmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
-;  -(make-NOTCOND cmd)				-Inverts the return from any given boolean command.
-;  -(make-GENCIRCLE number symbol)		-Generate circle
-;  -(make-GENRECT number number symbol)		-Generate rectangle
+;  -(make-JMPOBJ symbol number number)		-Jump object to x,y
+;  -(make-JMPOBJRAND symbol)			-Jump object to random coords
+;  -(make-STOPOBJ symbol)			-Stop object from movement
+;  -(make-ADDOBJ symbol)			-Add object
+;  -(make-UDTOBJ symbol)			-Update object
+;  -(make-DELOBJ symbol)			-Delete object
+;  -(make-WHILE condcmd list[cmd])		-Do while cmd returns true
+;  -(make-IFCOND condcmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
 ;
+;
+; A condcmd is one of
+;  -(make-COLLIDE? symbol symbol)
+;  -(make-EDGECOLLIDE? symbol)
+;  -(make-NOTCOND condcmd)
 ;
 ; An object is one of
-;  -symbol
-;  -(make-entity symbol graphic number number number number)
+;  -(make-object symbol graphic number number number number)
 ;
 ; A graphic is one of
-;  -symbol
 ;  -(make-GENCIRCLE number symbol)
 ;  -(make-GENRECT number number symbol)
 
@@ -60,8 +58,8 @@
 ; A COLLIDE? is (make-COLLIDE? object object)
 (define-struct COLLIDE? (obj1 obj2))
 
-; A CLEAR? is (make-CLEAR? object)
-(define-struct CLEAR? (obj))
+; A EDGECOLLIDE? is (make-EDGECOLLIDE? object)
+(define-struct EDGECOLLIDE? (obj))
 
 ; A WHILE is (make-WHILE cmd list[cmd])
 (define-struct WHILE (cnd cmds))
@@ -101,7 +99,7 @@
 		       (make-DELOBJ 'bwall)
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
 		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
-		       (make-WHILE (CLEAR? 'rcirc)
+		       (make-WHILE ((make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
 				   (make-UDTOBJ 'rcirc))
 		       (make-STOPOBJ 'rcirc)))
 
@@ -113,8 +111,8 @@
 |#
 (define anim-sample2 (list
 		       (make-ADDOBJ (make-object 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
-		       (make-WHILE (make-CLEAR? 'pcirc) (list
-							 (make-JMPOBJRAND 'pcirc)))
+		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc) (list
+									      (make-JMPOBJRAND 'pcirc)))
 		       (make-STOPOBJ 'pcirc)))
 
 
@@ -146,12 +144,12 @@
 (define anim-sample4 (list
 		       (make-WHILE true (list
 					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 1 0 5))
-					  (make-WHILE (make-CLEAR? 'bcirc) (list
-									     (make-UDTOBJ 'bcirc)))
+					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)
 					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
-					  (make-WHILE (make-CLEAR? 'bcirc) (list
-									     (make-UDTOBJ 'bcirc)))
+					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)))))
 
 
@@ -294,3 +292,56 @@
 	[else
 	  (error "invalid command")]))
 
+
+;; eval-condcmd: cmd -> boolean
+;; Consumes a conditional command (COLLIDE?, EDGECOLLIDE?, NOTCOND)
+;; and returns the evaluation of that command in boolean form.
+(define (eval-condcmd cmd)
+  (cond [(NOTCOND? cmd)
+	 (not (eval-condcmd cmd))]
+	[(EDGECOLLIDE?? cmd) ; This feels strange
+	 (or
+	   (> 0 (object-posx (get-object (EDGECOLLIDE?-obj cmd))))
+	   (< WIN_X (object-posx (get-object (EDGECOLLIDE?-obj cmd))))
+	   (> 0 (object-posy (get-object (EDGECOLLIDE?-obj cmd))))
+	   (< WIN_Y (object-posy (get-object (EDGECOLLIDE?-obj cmd)))))]
+	[(COLLIDE?? cmd) ; Yeah, really strange!
+	 (overlap? (COLLIDE?-obj1 cmd) (COLLIDE?-obj2 cmd))]))
+
+
+;; overlap?: object object -> boolean
+;; Consumes an two objects and returns true if their graphics overlap.
+;; This is supposed to be fairy high-precision, it should be "simple".
+(define (overlap? obj1 obj2)
+  (local [(define (circ-to-rect circ)			; Cheat at circle collision detection. Circles have corners, right?
+	   (make-object
+	     (object-name circ)
+	     (make-GENRECT (GENCIRCLE-rad (object-sprite circ))
+	        	   (GENCIRCLE-rad (object-sprite circ))
+			   (GENCIRCLE-color (object-sprite circ)))
+	      (object-posx circ)
+	      (object-posy circ)
+	      0 0))
+	  (define (intersect-rect obj1 obj2)
+	    (nand	; Return true if none of the failure conditions are true
+	      (> (object-posx obj1)			; obj2 1 is to the right of obj2
+	         (GENRECT-w (object-sprite obj2)))
+              (> (object-posx obj2)			; obj2 1 is to the right of obj1
+	         (GENRECT-w (object-sprite obj1)))
+              (> (object-posy obj1)
+	         (GENRECT-h (object-sprite obj2)))
+       	      (> (object-posy obj2)
+	         (GENRECT-h (object-sprite obj1)))))]
+    (intersect-rect (if (GENCIRCLE? obj1)
+		      (circ-to-rect obj1)
+		      obj1)
+		    (if (GENCIRCLE? obj2)
+		      (circ-to-rect obj2)
+		      obj2))))
+
+;; exec-while: WHILE -> void
+(define (exec-while cmd)
+  (if (eval-condcmd (WHILE-cnd))
+    (begin
+      (big-cruch (WHILE-cmds cmd))
+      (exec-while cmd)))) ; no else case. Surely this works fantastically!
