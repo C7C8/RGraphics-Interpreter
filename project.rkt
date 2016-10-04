@@ -142,15 +142,15 @@
 	"A black ball bounces endlessly up and down."
 |#
 (define anim-sample4 (list
-		       ;(make-WHILE true (list
-					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 400 0 5))
+		       (make-WHILE true (list
+					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 1 0 5))
 					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
 												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)
 					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
 					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
 												  (make-UDTOBJ 'bcirc)))
-					  (make-DELOBJ 'bcirc)));))
+					  (make-DELOBJ 'bcirc)))))
 
 
 
@@ -252,10 +252,10 @@
 ;; return booleans.
 (define (exec-cmd cmd)
   (cond [(JMPOBJ? cmd)
-	 (move-obj (JMPOBJ-obj cmd) (JMPOBJ-nx cmd) (JMPOBJ-ny cmd))]
+	 (move-obj (JMPOBJ-nx cmd) (JMPOBJ-ny cmd) (JMPOBJ-obj cmd))]
 
 	[(JMPOBJRAND? cmd)
-	 (move-obj (JMPOBJRAND-obj cmd) (random WIN_X) (random WIN_Y))]
+	 (move-obj (random WIN_X) (random WIN_Y) (JMPOBJRAND-obj cmd))]
 
 	[(STOPOBJ? cmd)
 	 (stor-obj
@@ -325,9 +325,9 @@
 	     (make-GENRECT (GENCIRCLE-rad (object-sprite circ))
 	        	   (GENCIRCLE-rad (object-sprite circ))
 			   (GENCIRCLE-color (object-sprite circ)))
-	      (object-posx circ)
-	      (object-posy circ)
-	      0 0))
+	     (object-posx circ)
+	     (object-posy circ)
+	     0 0))
 	  (define (intersect-rect obj1 obj2)
 	    (nand	; Return true if none of the failure conditions are true
 	      (> (object-posx obj1)			; obj2 1 is to the right of obj2
@@ -381,4 +381,4 @@
 
 
 (create-canvas WIN_X WIN_Y)
-(big-crunch anim-sample4)
+(big-crunch anim-sample2)
