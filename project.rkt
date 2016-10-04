@@ -228,6 +228,7 @@
     (stor-obj
       (make-object
         name
+	(object-sprite (get-object name))
         nx
         ny
         (object-velx (get-object name))
@@ -271,18 +272,14 @@
 	 (stor-obj (ADDOBJ-obj cmd))]
 
 	[(UDTOBJ? cmd)	; maybe split this off into an exec-UDTOBJ?
-	 (stor-obj
-	   (make-object
-	     (UDTOBJ-obj cmd)					; Name
-	     (object-sprite (get-object (UDTOBJ-obj cmd)))	; Sprite
+	 (move-obj
 	     (+ 
 	       (object-posx (get-object (UDTOBJ-obj cmd)))	; Update posx
 	       (object-velx (get-object (UDTOBJ-obj cmd))))
 	     (+ 
 	       (object-posy (get-object (UDTOBJ-obj cmd)))	; Update posy
 	       (object-vely (get-object (UDTOBJ-obj cmd))))
-	     (object-velx (get-object (UDTOBJ-obj cmd)))	; Velx
-	     (object-vely (get-object (UDTOBJ-obj cmd)))))]	; Vely
+	     (UDTOBJ-obj cmd))]
 
 	[(DELOBJ? cmd)
 	 (del-obj (DELOBJ-obj cmd))]
