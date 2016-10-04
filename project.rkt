@@ -144,12 +144,12 @@
 (define anim-sample4 (list
 		       ;(make-WHILE true (list
 					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 400 0 5))
-					  ;(make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-												  (make-UDTOBJ 'bcirc);))
+					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)
 					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
-					  ;(make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-												  (make-UDTOBJ 'bcirc);))
+					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)));))
 
 
@@ -217,7 +217,7 @@
 
 (define WIN_X 800)
 (define WIN_Y 600)
-(define SKIPTIME 0.25)
+(define SKIPTIME 0.016)
 
 
 ;; mov-obj: number number symbol -> void
@@ -304,8 +304,8 @@
 ;; and returns the evaluation of that command in boolean form.
 (define (eval-condcmd cmd)
   (cond [(NOTCOND? cmd)
-	 (not (eval-condcmd cmd))]
-	[(EDGECOLLIDE?? cmd) ; This feels strange
+	 (not (eval-condcmd (NOTCOND-cnd cmd)))] ; This used to read "(eval-condcmd cmd)", resulting in an infinitely expanding stack. FUN!
+	[(EDGECOLLIDE?? cmd)
 	 (or
 	   (> 0 (object-posx (get-object (EDGECOLLIDE?-obj cmd))))
 	   (< WIN_X (object-posx (get-object (EDGECOLLIDE?-obj cmd))))
