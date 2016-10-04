@@ -179,9 +179,9 @@
 ;; Conusmes a symbol and returns the object associated with that symbol.
 ;; No test cases because this relies on a global variable.
 (define (get-object name)
-  (if (not (in-core? name))
-    (error (format "Cannot retrieve object \"~a\" - does not exist!~n" (symbol->string name))) ;; ooh, this doesn't look like normal racket syntax!
-    (first (filter (lambda (obj)(symbol=? name (object-name obj))) core)))) ;; is symbol->string macro-involved?
+  (if (in-core? name)
+    (first (filter (lambda (obj)(symbol=? name (object-name obj))) core))
+    (error (format "Cannot retrieve object \"~a\" - does not exist!~n" (symbol->string name)))))
 	
 
 ;; stor-obj: object -> void
@@ -205,10 +205,8 @@
 ;; from core memory.
 (define (del-obj name)
   (set! core
-    (map (lambda (obj)
-	   (if (symbol=? (object-name obj) name)
-	     empty
-	     obj))
+    (filter (lambda (obj)
+	      (not (symbol=? name (object-name obj))))
 	 core)))
 
 
