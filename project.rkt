@@ -142,15 +142,15 @@
 	"A black ball bounces endlessly up and down."
 |#
 (define anim-sample4 (list
-		       (make-WHILE true (list
+		       ;(make-WHILE true (list
 					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 400 0 5))
-					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-												  (make-UDTOBJ 'bcirc)))
+					  ;(make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+												  (make-UDTOBJ 'bcirc);))
 					  (make-DELOBJ 'bcirc)
 					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
-					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-												  (make-UDTOBJ 'bcirc)))
-					  (make-DELOBJ 'bcirc)))))
+					  ;(make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+												  (make-UDTOBJ 'bcirc);))
+					  (make-DELOBJ 'bcirc)));))
 
 
 
@@ -180,7 +180,7 @@
 ;; No test cases because this relies on a global variable.
 (define (get-object name)
   (if (not (in-core? name))
-    (error (format "Cannot retrieve object \"~a\" - does not exist!" (symbol->string name))) ;; ooh, this doesn't look like normal racket syntax!
+    (error (format "Cannot retrieve object \"~a\" - does not exist!~n" (symbol->string name))) ;; ooh, this doesn't look like normal racket syntax!
     (first (filter (lambda (obj)(symbol=? name (object-name obj))) core)))) ;; is symbol->string macro-involved?
 	
 
@@ -200,7 +200,6 @@
 	(list obj)
 	(append core obj)))))
 
-
 ;; del-obj: symbol -> void
 ;; Consumes an object name (symbol) and deletes it entirely
 ;; from core memory.
@@ -209,7 +208,8 @@
     (map (lambda (obj)
 	   (if (symbol=? (object-name obj) name)
 	     empty
-	     obj)))))
+	     obj))
+	 core)))
 
 
 ; =============================
@@ -373,16 +373,14 @@
 			   "solid"
 			   (GENCIRCLE-color spr))]))
 	  (define (render-objlist lst) ;; Returns a scene.
-	    (cond [(empty? lst) 
-		   (empty-scene WIN_X WIN_Y)]
-		  [else
-		    (place-image (sprite-to-img (object-sprite (first lst)))
-				 (object-posx (first lst))
-				 (object-posy (first lst))
-				 (render-objlist (rest lst)))]))]
-    (update-frame (render-objlist core))))
+	    (cond [(cons? lst)
+		   (place-image (sprite-to-img (object-sprite (first lst)))
+				(object-posx (first lst))
+				(object-posy (first lst))
+				(render-objlist (rest lst)))]
+		  [else (empty-scene WIN_X WIN_Y)]))]
+      (update-frame (render-objlist core))))
 
 
 (create-canvas WIN_X WIN_Y)
 (big-crunch anim-sample4)
-
