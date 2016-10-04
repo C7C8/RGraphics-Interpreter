@@ -243,7 +243,7 @@
 	      (begin
 		(exec-cmd cmd)
 		(core-dump core)
-		(sleep/yield SKIPTIME)
+		(sleep/yield SKIPTIME)))
 	    cmdlist))
 
 
