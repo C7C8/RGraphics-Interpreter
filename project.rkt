@@ -143,7 +143,7 @@
 |#
 (define anim-sample4 (list
 		       (make-WHILE true (list
-					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 1 0 5))
+					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 400 0 5))
 					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
 												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)
@@ -196,7 +196,9 @@
 	       obj ; Replace prior-existing variable under given name
 	       o))
 	   core)
-      (append obj core))))
+      (if (empty? core)	;; If the core is empty, make a list out of an incoming object
+	(list obj)
+	(append core obj)))))
 
 
 ;; del-obj: symbol -> void
@@ -242,7 +244,7 @@
   (for-each (lambda (cmd)
 	      (begin
 		(exec-cmd cmd)
-		(core-dump core)
+		(core-dump)
 		(sleep/yield SKIPTIME)))
 	    cmdlist))
 
@@ -348,7 +350,7 @@
 ;; exec-while: WHILE -> void
 ;; Executes a WHILE command, recursively.
 (define (exec-while cmd)
-  (if (eval-condcmd (WHILE-cnd))
+  (if (eval-condcmd (WHILE-cnd cmd))
     (begin
       (big-crunch (WHILE-cmds cmd))
       (exec-while cmd))
