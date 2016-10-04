@@ -359,7 +359,7 @@
 ;; Takes the core and dumps it. Just kidding, this displays all objects
 ;; in the core and writes them to the screen.
 ;; Yes, all the "core" terminology from earlier was a buildup to this.
-(define (core-dump objs)
+(define (core-dump)
   (local [(define (sprite-to-img spr)
 	    (cond [(GENRECT? spr)
 		   (rectangle (GENRECT-w spr)
@@ -371,13 +371,28 @@
 			   "solid"
 			   (GENCIRCLE-color spr))]))
 	  (define (render-objlist lst) ;; Returns a scene.
-	    (place-image (object-sprite (first lst))
-			 (object-posx (first lst))
-			 (object-posy (first lst))
-			 (cond [(cons? lst)
-				(render-objlist (rest lst))]
-			       [else	; Ooh, Vim doesn't think this is a keyword. FUN!
-				(empty-scene WIN_X WIN_Y)])))]
+	    (cond [(empty? lst) 
+		   (empty-scene WIN_X WIN_Y)]
+		  [else
+		    (place-image (sprite-to-img (object-sprite (first lst)))
+				 (object-posx (first lst))
+				 (object-posy (first lst))
+				 (render-objlist (rest lst)))]))]
     (update-frame (render-objlist core))))
 
+
 (create-canvas WIN_X WIN_Y)
+(set! core (list
+	     (make-object 'whatever
+			  (make-GENCIRCLE 40 'red)
+			  380
+			  280
+			  0
+			  0)
+	     (make-object 'w2
+			  (make-GENRECT 60 60 'blue)
+			  0
+			  0
+			  0
+			  0)))
+(core-dump)
