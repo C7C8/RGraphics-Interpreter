@@ -217,6 +217,7 @@
 
 (define WIN_X 800)
 (define WIN_Y 600)
+(define SKIPTIME 0.25)
 
 
 ;; mov-obj: number number symbol -> void
@@ -238,7 +239,12 @@
 ;; big-crunch: list[cmd] -> void
 ;; Runs the program contained within a list of commands.
 (define (big-crunch cmdlist)
-  (for-each exec-cmd cmdlist))
+  (for-each (lambda (cmd)
+	      (begin
+		(exec-cmd cmd)
+		(core-dump core)
+		(sleep/yield SKIPTIME)
+	    cmdlist))
 
 
 ;; exec-cmd: cmd -> void
@@ -340,9 +346,38 @@
 		      obj2))))
 
 ;; exec-while: WHILE -> void
+;; Executes a WHILE command, recursively.
 (define (exec-while cmd)
   (if (eval-condcmd (WHILE-cnd))
     (begin
       (big-crunch (WHILE-cmds cmd))
       (exec-while cmd))
-    (void))) 
+    (void)))
+
+
+;; core-dump: void -> void
+;; Takes the core and dumps it. Just kidding, this displays all objects
+;; in the core and writes them to the screen.
+;; Yes, all the "core" terminology from earlier was a buildup to this.
+(define (core-dump objs)
+  (local [(define (sprite-to-img spr)
+	    (cond [(GENRECT? spr)
+		   (rectangle (GENRECT-w spr)
+			      (GENRECT-h spr)
+			      "solid"
+			      (GENRECT-color spr))]
+		  [(GENCIRCLE? spr)
+		   (circle (GENCIRCLE-rad spr)
+			   "solid"
+			   (GENCIRCLE-color spr))]))
+	  (define (render-objlist lst) ;; Returns a scene.
+	    (place-image (object-sprite (first lst))
+			 (object-posx (first lst))
+			 (object-posy (first lst))
+			 (cond [(cons? lst)
+				(render-objlist (rest lst))]
+			       [else	; Ooh, Vim doesn't think this is a keyword. FUN!
+				(empty-scene WIN_X WIN_Y)])))]
+    (update-frame (render-objlist core))))
+
+(create-canvas WIN_X WIN_Y)
