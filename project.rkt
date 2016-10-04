@@ -382,17 +382,5 @@
 
 
 (create-canvas WIN_X WIN_Y)
-(set! core (list
-	     (make-object 'whatever
-			  (make-GENCIRCLE 40 'red)
-			  380
-			  280
-			  0
-			  0)
-	     (make-object 'w2
-			  (make-GENRECT 60 60 'blue)
-			  0
-			  0
-			  0
-			  0)))
-(core-dump)
+(big-crunch anim-sample4)
+
