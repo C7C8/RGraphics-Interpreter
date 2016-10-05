@@ -90,13 +90,13 @@
 	edge of the canvas, stopping when it hits the left edge of the canvas."
 |#
 (define anim-sample1 (list
-		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 1 0.5))
+		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 1.5 0.25))
 		       (make-ADDOBJ (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
 				   (list (make-UDTOBJ 'rcirc)))
 		       (make-DELOBJ 'bwall)
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
-		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
+		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 600 200 -1.52 0))
 		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
 				   (list (make-UDTOBJ 'rcirc)))
 		       (make-STOPOBJ 'rcirc)))
@@ -128,7 +128,7 @@
 				   (list (make-UDTOBJ 'ocirc)))
 		       (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 540 50 'red) 750 25 0 0))
 		       (make-DELOBJ 'ocirc)
-		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 740 5 0))
+		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 700 5 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
 				   (list (make-UDTOBJ 'ocirc)))
 		       (make-STOPOBJ 'ocirc)
@@ -248,12 +248,12 @@
 ;; Runs the program contained within a list of commands.
 (define (big-crunch cmdlist)
   (for-each (lambda (cmd)
-	      (begin
-		(exec-cmd cmd)
-		(core-dump)
-		(sleep/yield SKIPTIME)))
-	    cmdlist))
-
+              (begin
+                (exec-cmd cmd)
+                (core-dump)
+                (sleep/yield SKIPTIME)))
+            cmdlist))
+            
 
 ;; mov-obj: number number symbol -> void
 ;; Consumes two numbers and an gobject name, and moves
@@ -338,21 +338,27 @@
 ;; overlap?: gobject gobject -> boolean
 ;; Consumes an two gobjects and returns true if their graphics overlap.
 
-(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Pefect overlap of rectanges.
-                        (make-gobject 'o2 (make-GENRECT 10 10 'red) 0 0 0 0))
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 40 40 'red) 604 142 3 0.25)  ; Retangles overlap
+                        (make-gobject 'o2 (make-GENRECT 400 20 'blue) 600 50 0 0))
               true)
-(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Non-overlap
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Rectanges don't overlap
                         (make-gobject 'o2 (make-GENRECT 10 10 'red) 30 30 0 0))
               false)
-(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Corners overlap
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Rectange corners overlap
                         (make-gobject 'o2 (make-GENRECT 10 10 'red) 5 5 0 0))
               true)
 (check-expect (overlap? (make-gobject 'o1 (make-GENCIRCLE 5 'red) 0 0 0 0)    ; Circle corners overlap
                         (make-gobject 'o2 (make-GENCIRCLE 5 'red) 5 0 0 0))
               true)
-(check-expect (overlap? (make-gobject 'o1 (make-GENCIRCLE 10 'red) 0 0 0 0)  ; Circles non-overlap
+(check-expect (overlap? (make-gobject 'o1 (make-GENCIRCLE 10 'red) 0 0 0 0)   ; Circles don't overlap
                         (make-gobject 'o2 (make-GENCIRCLE 10 'red) 30 30 0 0))
               false)
+(check-expect (overlap? (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 3 0.25)   ; Rectangle doesn't overlap with circle
+                        (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
+              false)
+(check-expect (overlap? (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 604 142 3 0.25)   ; Rectangle overlaps with circle
+                        (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
+              true)
 (define (overlap? o1 o2)
   (local [(define (to-rect circ)  ; Cheat at circle collision detection. Circles have corners, right?
             (if (GENCIRCLE? circ)
@@ -362,13 +368,13 @@
                 circ))]
     (nor	                                        ; Return true if none of the failure conditions are true
      (> (gobject-posx o1)		              	; obj2 1 is to the right of obj2
-        (GENRECT-w (to-rect (gobject-sprite o2))))
+        (+ (gobject-posx o2) (GENRECT-w (to-rect (gobject-sprite o2)))))
      (> (gobject-posx o2)		                ; obj2 1 is to the right of obj1
-        (GENRECT-w (to-rect (gobject-sprite o1))))
+        (+ (gobject-posx o1) (GENRECT-w (to-rect (gobject-sprite o1)))))
      (> (gobject-posy o1)
-        (GENRECT-h (to-rect (gobject-sprite o2))))
+        (+ (gobject-posy o2) (GENRECT-h (to-rect (gobject-sprite o2)))))
      (> (gobject-posy o2)
-        (GENRECT-h (to-rect (gobject-sprite o1)))))))
+        (+ (gobject-posy o1) (GENRECT-h (to-rect (gobject-sprite o1))))))))
 
 ;; exec-while: WHILE -> void
 ;; Executes a WHILE command, recursively.
@@ -405,6 +411,6 @@
     (update-frame (render-objlist core))))
 
 
-(test)
-;(create-canvas WIN_X WIN_Y) 
-;(big-crunch anim-sample1)
+;(test)
+(create-canvas WIN_X WIN_Y) 
+(big-crunch anim-sample3)
