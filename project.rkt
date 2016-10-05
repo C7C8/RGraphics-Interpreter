@@ -126,9 +126,9 @@
 		       (make-ADDOBJ (make-gobject 'grect (make-GENRECT 50 750 'green) 25 540 0 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
 				   (list (make-UDTOBJ 'ocirc)))
-		       (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 540 50 'red) 750 25 0 0))
+		       (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 500 50 'red) 750 25 0 0))
 		       (make-DELOBJ 'ocirc)
-		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 700 5 0))
+		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 500 5 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
 				   (list (make-UDTOBJ 'ocirc)))
 		       (make-STOPOBJ 'ocirc)
@@ -401,11 +401,19 @@
                    (circle (GENCIRCLE-rad spr)
                            "solid"
                            (GENCIRCLE-color spr))]))
+          (define (gxcord obj)
+            (+ (gobject-posx obj) (if (GENRECT? (gobject-sprite obj))
+                                      (/ (GENRECT-w (gobject-sprite obj)) 2)
+                                      (GENCIRCLE-rad (gobject-sprite obj)))))
+          (define (gycord obj)
+            (+ (gobject-posy obj) (if (GENRECT? (gobject-sprite obj))
+                                      (/ (GENRECT-h (gobject-sprite obj)) 2)
+                                      (GENCIRCLE-rad (gobject-sprite obj)))))
           (define (render-objlist lst) ;; Returns a scene.
             (cond [(cons? lst)
                    (place-image (sprite-to-img (gobject-sprite (first lst)))
-                                (gobject-posx (first lst))
-                                (gobject-posy (first lst))
+                                (gxcord (first lst))
+                                (gycord (first lst))
                                 (render-objlist (rest lst)))]
                   [else (empty-scene WIN_X WIN_Y)]))]
     (update-frame (render-objlist core))))
