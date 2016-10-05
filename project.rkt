@@ -96,7 +96,7 @@
 				   (list (make-UDTOBJ 'rcirc)))
 		       (make-DELOBJ 'bwall)
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
-		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 600 200 -1.52 0))
+		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 560 175 -1.52 0))
 		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
 				   (list (make-UDTOBJ 'rcirc)))
 		       (make-STOPOBJ 'rcirc)))
@@ -126,7 +126,7 @@
 		       (make-ADDOBJ (make-gobject 'grect (make-GENRECT 50 750 'green) 25 540 0 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
 				   (list (make-UDTOBJ 'ocirc)))
-		       (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 500 50 'red) 750 25 0 0))
+		       (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 512 50 'red) 750 25 0 0))
 		       (make-DELOBJ 'ocirc)
 		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 500 5 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
