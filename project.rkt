@@ -14,11 +14,11 @@
 ; A cmd is one of:
 ;  -(make-JMPOBJ symbol number number)		-Jump gobject to x,y
 ;  -(make-JMPOBJRAND symbol)			-Jump gobject to random coords
-;  -(make-STOPOBJ symbol)			-Stop gobject from movement
-;  -(make-ADDOBJ symbol)			-Add gobject
-;  -(make-UDTOBJ symbol)			-Update gobject
-;  -(make-DELOBJ symbol)			-Delete gobject
-;  -(make-WHILE condcmd list[cmd])		-Do while cmd returns true
+;  -(make-STOPOBJ symbol)			        -Stop gobject from movement
+;  -(make-ADDOBJ symbol)			        -Add gobject
+;  -(make-UDTOBJ symbol)			        -Update gobject
+;  -(make-DELOBJ symbol)			        -Delete gobject
+;  -(make-WHILE condcmd list[cmd])		        -Do while cmd returns true
 ;  -(make-IFCOND condcmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
 ;
 ;
@@ -98,7 +98,7 @@
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
 		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
 		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
-				   (make-UDTOBJ 'rcirc))
+				   (list (make-UDTOBJ 'rcirc)))
 		       (make-STOPOBJ 'rcirc)))
 
 
@@ -337,14 +337,30 @@
 
 ;; overlap?: gobject gobject -> boolean
 ;; Consumes an two gobjects and returns true if their graphics overlap.
+
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Pefect overlap of rectanges.
+                        (make-gobject 'o2 (make-GENRECT 10 10 'red) 0 0 0 0))
+              true)
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Non-overlap
+                        (make-gobject 'o2 (make-GENRECT 10 10 'red) 30 30 0 0))
+              false)
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Corners overlap
+                        (make-gobject 'o2 (make-GENRECT 10 10 'red) 5 5 0 0))
+              true)
+(check-expect (overlap? (make-gobject 'o1 (make-GENCIRCLE 5 'red) 0 0 0 0)    ; Circle corners overlap
+                        (make-gobject 'o2 (make-GENCIRCLE 5 'red) 5 0 0 0))
+              true)
+(check-expect (overlap? (make-gobject 'o1 (make-GENCIRCLE 10 'red) 0 0 0 0)  ; Circles non-overlap
+                        (make-gobject 'o2 (make-GENCIRCLE 10 'red) 30 30 0 0))
+              false)
 (define (overlap? o1 o2)
   (local [(define (to-rect circ)  ; Cheat at circle collision detection. Circles have corners, right?
             (if (GENCIRCLE? circ)
-                (make-GENRECT (GENCIRCLE-rad circ)
-                              (GENCIRCLE-rad circ)
+                (make-GENRECT (* 2 (GENCIRCLE-rad circ))
+                              (* 2 (GENCIRCLE-rad circ))
                               (GENCIRCLE-color circ))
                 circ))]
-    (nand	                                        ; Return true if none of the failure conditions are true
+    (nor	                                        ; Return true if none of the failure conditions are true
      (> (gobject-posx o1)		              	; obj2 1 is to the right of obj2
         (GENRECT-w (to-rect (gobject-sprite o2))))
      (> (gobject-posx o2)		                ; obj2 1 is to the right of obj1
@@ -389,5 +405,6 @@
     (update-frame (render-objlist core))))
 
 
-(create-canvas WIN_X WIN_Y) 
-(big-crunch anim-sample4)
+(test)
+;(create-canvas WIN_X WIN_Y) 
+;(big-crunch anim-sample1)
