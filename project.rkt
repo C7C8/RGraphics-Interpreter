@@ -48,7 +48,7 @@
 (define-struct ADDOBJ (obj))
 
 ; A UDTOBJ is (make-UDTOBJ gobject)
-(define-struct UDTOBJ (obj))
+(define-struct UDTOBJ (obj) (make-inspector))
 
 ; A DELOBJ is (make-DELOBJ gobject)
 (define-struct DELOBJ (obj))
@@ -60,7 +60,7 @@
 (define-struct EDGECOLLIDE? (obj))
 
 ; A WHILE is (make-WHILE cmd list[cmd])
-(define-struct WHILE (cnd cmds))
+(define-struct WHILE (cnd cmds) (make-inspector))
 
 ; A IFCOND is (make-IFCOND cmd list[cmd] list[cmd])
 (define-struct IFCOND (cnd ctrue cfalse))
@@ -90,7 +90,7 @@
 	edge of the canvas, stopping when it hits the left edge of the canvas."
 |#
 (define anim-sample1 (list
-		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 5 3))
+		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 1 0.5))
 		       (make-ADDOBJ (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
 				   (list (make-UDTOBJ 'rcirc)))
@@ -316,8 +316,7 @@
 	   (big-crunch (IFCOND-cfalse cmd)))]
 
 	[else
-	  (error "invalid command")]))
-
+	  (error (format "invalid command: ~a~n" cmd))]))
 
 ;; eval-condcmd: cmd -> boolean
 ;; Consumes a conditional command (COLLIDE?, EDGECOLLIDE?, NOTCOND)
@@ -360,7 +359,7 @@
 (define (exec-while cmd)
   (if (eval-condcmd (WHILE-cnd cmd))
       (begin
-        (big-crunch (WHILE-cmds cmd))
+        (big-crunch (WHILE-cmds cmd)) ; what the f**k?
         (exec-while cmd))
       (void)))
 
@@ -390,6 +389,5 @@
     (update-frame (render-objlist core))))
 
 
-(test)
 (create-canvas WIN_X WIN_Y) 
-(big-crunch anim-sample1)
+(big-crunch anim-sample4)
