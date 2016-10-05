@@ -1,7 +1,5 @@
 #!/usr/bin/racket
-#lang racket		;; These lines required to run the program without DrRacket
 (require test-engine/racket-tests)
-(require htdp/image)
 (require "world-cs1102.rkt")
 
 ; =======================
@@ -71,13 +69,13 @@
 (define-struct NOTCOND (cnd))
 
 ; A GENCIRCLE is (make-GENCIRCLE number symbol)
-(define-struct GENCIRCLE (rad color))
+(define-struct GENCIRCLE (rad color) (make-inspector))
 
 ; A GENRECT is (make-GENRECT number number symbol)
-(define-struct GENRECT (h w color))
+(define-struct GENRECT (h w color) (make-inspector))
 
 ; An gobject is (make-gobject symbol graphic number number number number)
-(define-struct gobject (name sprite posx posy velx vely))
+(define-struct gobject (name sprite posx posy velx vely) (make-inspector))
 
 
 
@@ -205,26 +203,26 @@
 (check-expect (stor-obj-in-list (make-gobject 'O1 0 0 0 0 0) empty)				; Storing gobjects in an empty list
 	      (list (make-gobject 'O1 0 0 0 0 0)))
 (check-expect (stor-obj-in-list (make-gobject 'O2 0 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)))	; Storing gobjects in a list with one gobject
-	      (list (make-gobject 'O1 0 0 0 0 0)
-		    (make-gobject 'O2 0 0 0 0 0)))
+	      (list (make-gobject 'O2 0 0 0 0 0)
+               (make-gobject 'O1 0 0 0 0 0)))
 (check-expect (stor-obj-in-list (make-gobject 'O3 0 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)	; Storing gobjects in a list with two gobjects
 								  (make-gobject 'O2 0 0 0 0 0)))
-	      (list (make-gobject 'O1 0 0 0 0 0)
-		    (make-gobject 'O2 0 0 0 0 0)
-		    (make-gobject 'O3 0 0 0 0 0)))
-(check-expect (stor-obj-in-list (make-gobject 'O1 1 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0))) ; Overwriting an gobject
+	      (list (make-gobject 'O3 0 0 0 0 0)
+               (make-gobject 'O1 0 0 0 0 0)
+		    (make-gobject 'O2 0 0 0 0 0)))
+(check-expect (stor-obj-in-list (make-gobject 'O1 1 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)))  ; Overwriting an gobject
 	      (list (make-gobject 'O1 1 0 0 0 0)))
 
 (define (stor-obj-in-list obj lst)
-  (if (in-core? (gobject-name obj)) ;; Allows for addition of new variables
+  (if (obj-in-list? (gobject-name obj) lst) ;; Allows for addition of new variables
     (map (lambda (o)
 	   (if (symbol=? (gobject-name o) (gobject-name obj))
 	     obj ; Replace prior-existing variable under given name
 	     o))
-	 core)
-    (if (empty? core)	;; If the core is empty, make a list out of an incoming gobject
+	 lst)
+    (if (empty? lst)	;; If the core is empty, make a list out of an incoming gobject
       (list obj)
-      (append core obj))))
+      (cons obj lst))))
 
 ;; del-obj: symbol -> void
 ;; Consumes an gobject name (symbol) and deletes it entirely
@@ -327,54 +325,54 @@
 ;; Note: EDGECOLLIDE defines its edges as 10px inside the actual window border.
 (define (eval-condcmd cmd)
   (cond [(NOTCOND? cmd)
-	 (not (eval-condcmd (NOTCOND-cnd cmd)))] ; This used to read "(eval-condcmd cmd)", resulting in an infinitely expanding stack. FUN!
-	[(EDGECOLLIDE?? cmd)
-	 (or
-	   (> 10 (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
-	   (< (- WIN_X 10) (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
-	   (> 10 (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))))
-	   (< (- WIN_Y 10) (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd)))))]
-	[(COLLIDE?? cmd) 
-	 (overlap? (COLLIDE?-obj1 cmd) (COLLIDE?-obj2 cmd))]))
+         (not (eval-condcmd (NOTCOND-cnd cmd)))] ; This used to read "(eval-condcmd cmd)", resulting in an infinitely expanding stack. FUN!
+        [(EDGECOLLIDE?? cmd)
+         (or
+          (> 10 (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
+          (< (- WIN_X 10) (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
+          (> 10 (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))))
+          (< (- WIN_Y 10) (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd)))))]
+        [(COLLIDE?? cmd) 
+         (overlap? (COLLIDE?-obj1 cmd) (COLLIDE?-obj2 cmd))]))
 
 
 ;; overlap?: gobject gobject -> boolean
 ;; Consumes an two gobjects and returns true if their graphics overlap.
 (define (overlap? obj1 obj2)
   (local [(define (circ-to-rect circ)			; Cheat at circle collision detection. Circles have corners, right?
-	   (make-gobject
-	     (gobject-name circ)
-	     (make-GENRECT (GENCIRCLE-rad (gobject-sprite circ))
-	        	   (GENCIRCLE-rad (gobject-sprite circ))
-			   (GENCIRCLE-color (gobject-sprite circ)))
-	     (gobject-posx circ)
-	     (gobject-posy circ)
-	     0 0))
-	  (define (intersect-rect obj1 obj2)
-	    (nand	; Return true if none of the failure conditions are true
-	      (> (gobject-posx obj1)			; obj2 1 is to the right of obj2
-	         (GENRECT-w (gobject-sprite obj2)))
-              (> (gobject-posx obj2)			; obj2 1 is to the right of obj1
-	         (GENRECT-w (gobject-sprite obj1)))
-              (> (gobject-posy obj1)
-	         (GENRECT-h (gobject-sprite obj2)))
-       	      (> (gobject-posy obj2)
-	         (GENRECT-h (gobject-sprite obj1)))))]
+            (make-gobject
+             (gobject-name circ)
+             (make-GENRECT (GENCIRCLE-rad (gobject-sprite circ))
+                           (GENCIRCLE-rad (gobject-sprite circ))
+                           (GENCIRCLE-color (gobject-sprite circ)))
+             (gobject-posx circ)
+             (gobject-posy circ)
+             0 0))
+          (define (intersect-rect obj1 obj2)
+            (nand	; Return true if none of the failure conditions are true
+             (> (gobject-posx obj1)			; obj2 1 is to the right of obj2
+                (GENRECT-w (gobject-sprite obj2)))
+             (> (gobject-posx obj2)			; obj2 1 is to the right of obj1
+                (GENRECT-w (gobject-sprite obj1)))
+             (> (gobject-posy obj1)
+                (GENRECT-h (gobject-sprite obj2)))
+             (> (gobject-posy obj2)
+                (GENRECT-h (gobject-sprite obj1)))))]
     (intersect-rect (if (GENCIRCLE? obj1)
-		      (circ-to-rect obj1)
-		      obj1)
-		    (if (GENCIRCLE? obj2)
-		      (circ-to-rect obj2)
-		      obj2))))
+                        (circ-to-rect obj1)
+                        obj1)
+                    (if (GENCIRCLE? obj2)
+                        (circ-to-rect obj2)
+                        obj2))))
 
 ;; exec-while: WHILE -> void
 ;; Executes a WHILE command, recursively.
 (define (exec-while cmd)
   (if (eval-condcmd (WHILE-cnd cmd))
-    (begin
-      (big-crunch (WHILE-cmds cmd))
-      (exec-while cmd))
-    (void)))
+      (begin
+        (big-crunch (WHILE-cmds cmd))
+        (exec-while cmd))
+      (void)))
 
 
 ;; core-dump: void -> void
@@ -383,25 +381,25 @@
 ;; Yes, all the "core" terminology from earlier was a buildup to this.
 (define (core-dump)
   (local [(define (sprite-to-img spr)
-	    (cond [(GENRECT? spr)
-		   (rectangle (GENRECT-w spr)
-			      (GENRECT-h spr)
-			      "solid"
-			      (GENRECT-color spr))]
-		  [(GENCIRCLE? spr)
-		   (circle (GENCIRCLE-rad spr)
-			   "solid"
-			   (GENCIRCLE-color spr))]))
-	  (define (render-objlist lst) ;; Returns a scene.
-	    (cond [(cons? lst)
-		   (place-image (sprite-to-img (gobject-sprite (first lst)))
-				(gobject-posx (first lst))
-				(gobject-posy (first lst))
-				(render-objlist (rest lst)))]
-		  [else (empty-scene WIN_X WIN_Y)]))]
-      (update-frame (render-objlist core))))
+            (cond [(GENRECT? spr)
+                   (rectangle (GENRECT-w spr)
+                              (GENRECT-h spr)
+                              "solid"
+                              (GENRECT-color spr))]
+                  [(GENCIRCLE? spr)
+                   (circle (GENCIRCLE-rad spr)
+                           "solid"
+                           (GENCIRCLE-color spr))]))
+          (define (render-objlist lst) ;; Returns a scene.
+            (cond [(cons? lst)
+                   (place-image (sprite-to-img (gobject-sprite (first lst)))
+                                (gobject-posx (first lst))
+                                (gobject-posy (first lst))
+                                (render-objlist (rest lst)))]
+                  [else (empty-scene WIN_X WIN_Y)]))]
+    (update-frame (render-objlist core))))
 
 
 (test)
-;(create-canvas WIN_X WIN_Y)
-;(big-crunch anim-sample1)
+(create-canvas WIN_X WIN_Y) 
+(big-crunch anim-sample1)
