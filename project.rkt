@@ -14,12 +14,12 @@
 ; =====================
 
 ; A cmd is one of:
-;  -(make-JMPOBJ symbol number number)		-Jump object to x,y
-;  -(make-JMPOBJRAND symbol)			-Jump object to random coords
-;  -(make-STOPOBJ symbol)			-Stop object from movement
-;  -(make-ADDOBJ symbol)			-Add object
-;  -(make-UDTOBJ symbol)			-Update object
-;  -(make-DELOBJ symbol)			-Delete object
+;  -(make-JMPOBJ symbol number number)		-Jump gobject to x,y
+;  -(make-JMPOBJRAND symbol)			-Jump gobject to random coords
+;  -(make-STOPOBJ symbol)			-Stop gobject from movement
+;  -(make-ADDOBJ symbol)			-Add gobject
+;  -(make-UDTOBJ symbol)			-Update gobject
+;  -(make-DELOBJ symbol)			-Delete gobject
 ;  -(make-WHILE condcmd list[cmd])		-Do while cmd returns true
 ;  -(make-IFCOND condcmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
 ;
@@ -29,36 +29,36 @@
 ;  -(make-EDGECOLLIDE? symbol)
 ;  -(make-NOTCOND condcmd)
 ;
-; An object is one of
-;  -(make-object symbol graphic number number number number)
+; An gobject is one of
+;  -(make-gobject symbol graphic number number number number)
 ;
 ; A graphic is one of
 ;  -(make-GENCIRCLE number symbol)
 ;  -(make-GENRECT number number symbol)
 
 
-; A JMPOBJ is (make-JMPOBJ object number number)
+; A JMPOBJ is (make-JMPOBJ gobject number number)
 (define-struct JMPOBJ (obj nx ny))
 
-; A JMPOBJ is (make-JMPOBJRAND object)
+; A JMPOBJ is (make-JMPOBJRAND gobject)
 (define-struct JMPOBJRAND (obj))
 
-; A STOPOBJ is (make-STOPOBJ object)
+; A STOPOBJ is (make-STOPOBJ gobject)
 (define-struct STOPOBJ (obj))
 
-; A ADDOBJ is (make-ADDOBJ object)
+; A ADDOBJ is (make-ADDOBJ gobject)
 (define-struct ADDOBJ (obj))
 
-; A UDTOBJ is (make-UDTOBJ object)
+; A UDTOBJ is (make-UDTOBJ gobject)
 (define-struct UDTOBJ (obj))
 
-; A DELOBJ is (make-DELOBJ object)
+; A DELOBJ is (make-DELOBJ gobject)
 (define-struct DELOBJ (obj))
 
-; A COLLIDE? is (make-COLLIDE? object object)
+; A COLLIDE? is (make-COLLIDE? gobject gobject)
 (define-struct COLLIDE? (obj1 obj2))
 
-; A EDGECOLLIDE? is (make-EDGECOLLIDE? object)
+; A EDGECOLLIDE? is (make-EDGECOLLIDE? gobject)
 (define-struct EDGECOLLIDE? (obj))
 
 ; A WHILE is (make-WHILE cmd list[cmd])
@@ -76,8 +76,8 @@
 ; A GENRECT is (make-GENRECT number number symbol)
 (define-struct GENRECT (h w color))
 
-; An object is (make-object symbol graphic number number number number)
-(define-struct object (name sprite posx posy velx vely))
+; An gobject is (make-gobject symbol graphic number number number number)
+(define-struct gobject (name sprite posx posy velx vely))
 
 
 
@@ -92,13 +92,13 @@
 	edge of the canvas, stopping when it hits the left edge of the canvas."
 |#
 (define anim-sample1 (list
-		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 100 100 5 3))
-		       (make-ADDOBJ (make-object 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
+		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 5 3))
+		       (make-ADDOBJ (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
 				   (list (make-UDTOBJ 'rcirc)))
 		       (make-DELOBJ 'bwall)
 		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
-		       (make-ADDOBJ (make-object 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
+		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 600 340 -5 0))
 		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
 				   (make-UDTOBJ 'rcirc))
 		       (make-STOPOBJ 'rcirc)))
@@ -110,7 +110,7 @@
 	the top edge of the canvas."
 |#
 (define anim-sample2 (list
-		       (make-ADDOBJ (make-object 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
+		       (make-ADDOBJ (make-gobject 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
 		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc)) (list
 									      (make-JMPOBJRAND 'pcirc)))
 		       (make-STOPOBJ 'pcirc)))
@@ -124,13 +124,13 @@
 	location and stops."
 |#
 (define anim-sample3 (list
-		       (make-ADDOBJ (make-object 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
-		       (make-ADDOBJ (make-object 'grect (make-GENRECT 50 750 'green) 25 540 0 0))
+		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
+		       (make-ADDOBJ (make-gobject 'grect (make-GENRECT 50 750 'green) 25 540 0 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
 				   (list (make-UDTOBJ 'ocirc)))
-		       (make-ADDOBJ (make-object 'rrect (make-GENRECT 540 50 'red) 750 25 0 0))
+		       (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 540 50 'red) 750 25 0 0))
 		       (make-DELOBJ 'ocirc)
-		       (make-ADDOBJ (make-object 'ocirc (make-GENCIRCLE 20 'orange) 100 740 5 0))
+		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 740 5 0))
 		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
 				   (list (make-UDTOBJ 'ocirc)))
 		       (make-STOPOBJ 'ocirc)
@@ -143,11 +143,11 @@
 |#
 (define anim-sample4 (list
 		       (make-WHILE true (list
-					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 1 0 5))
+					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 1 0 5))
 					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
 												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)
-					  (make-ADDOBJ (make-object 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
+					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
 					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
 												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)))))
@@ -163,50 +163,76 @@
 ; CORE MEMORY FUNCTIONS
 
 
-;; list[object]
+;; list[gobject]
 (define core empty)
 
 
 ;; in-core?: symbol -> boolean
-;; Consumes a symbol and returns true if that an object by that names exists
+;; Consumes a symbol and returns true if that an gobject by that names exists
 ;; in core memory.
-(check-expect (in-core? 'DNE) false) ;; Works because core is defined as empty above.
 (define (in-core? name)
-  (not (empty? (filter (lambda (obj)(symbol=? name (object-name obj))) core))))
+  (obj-in-list? name core))
 
 
-;; get-object: symbol -> object
-;; Conusmes a symbol and returns the object associated with that symbol.
+;; obj-in-list? symbol list[obj] -> boolean
+;; Consumes a symbol and a list of gobjects and retrusn true
+;; if that gobject is present in the given list.
+(check-expect (obj-in-list? 'DNE core) false) ;; Works because core is defined as empty above.
+(check-expect (obj-in-list? 'DE (list (make-gobject 'DE 0 0 0 0 0))) true)
+(define (obj-in-list? name lst)
+  (not (empty? (filter (lambda (obj)(symbol=? name (gobject-name obj))) lst))))
+
+
+;; get-gobject: symbol -> gobject
+;; Conusmes a symbol and returns the gobject associated with that symbol.
 ;; No test cases because this relies on a global variable.
-(define (get-object name)
+(define (get-gobject name)
   (if (in-core? name)
-    (first (filter (lambda (obj)(symbol=? name (object-name obj))) core))
-    (error (format "Cannot retrieve object \"~a\" - does not exist!~n" (symbol->string name)))))
+    (first (filter (lambda (obj)(symbol=? name (gobject-name obj))) core))
+    (error (format "Cannot retrieve gobject \"~a\" - does not exist!~n" (symbol->string name)))))
 	
 
-;; stor-obj: object -> void
-;; Consumes an object and pushes it to core memory, overwriting
-;; anything else under the same name already there. Once again, no test
-;; cases as this too relies on a global variable AND returns void.
+;; stor-obj: gobject -> void
+;; Consumes an gobject and pushes it to core memory, overwriting
+;; anything else under the same name already there.
 (define (stor-obj obj)
-  (set! core
-    (if (in-core? (object-name obj)) ;; Allows for addition of new variables
-      (map (lambda (o)	
-	     (if (symbol=? (object-name o) (object-name obj))
-	       obj ; Replace prior-existing variable under given name
-	       o))
-	   core)
-      (if (empty? core)	;; If the core is empty, make a list out of an incoming object
-	(list obj)
-	(append core obj)))))
+  (set! core (stor-obj-in-list obj core)))
+
+
+;; stor-obj-in-list: gobject list[gobject] -> list[gobject]
+;; Consumes an gobject and pushes it to the given list, overwriting
+;; anything else under the same name already there.
+(check-expect (stor-obj-in-list (make-gobject 'O1 0 0 0 0 0) empty)				; Storing gobjects in an empty list
+	      (list (make-gobject 'O1 0 0 0 0 0)))
+(check-expect (stor-obj-in-list (make-gobject 'O2 0 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)))	; Storing gobjects in a list with one gobject
+	      (list (make-gobject 'O1 0 0 0 0 0)
+		    (make-gobject 'O2 0 0 0 0 0)))
+(check-expect (stor-obj-in-list (make-gobject 'O3 0 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)	; Storing gobjects in a list with two gobjects
+								  (make-gobject 'O2 0 0 0 0 0)))
+	      (list (make-gobject 'O1 0 0 0 0 0)
+		    (make-gobject 'O2 0 0 0 0 0)
+		    (make-gobject 'O3 0 0 0 0 0)))
+(check-expect (stor-obj-in-list (make-gobject 'O1 1 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0))) ; Overwriting an gobject
+	      (list (make-gobject 'O1 1 0 0 0 0)))
+
+(define (stor-obj-in-list obj lst)
+  (if (in-core? (gobject-name obj)) ;; Allows for addition of new variables
+    (map (lambda (o)
+	   (if (symbol=? (gobject-name o) (gobject-name obj))
+	     obj ; Replace prior-existing variable under given name
+	     o))
+	 core)
+    (if (empty? core)	;; If the core is empty, make a list out of an incoming gobject
+      (list obj)
+      (append core obj))))
 
 ;; del-obj: symbol -> void
-;; Consumes an object name (symbol) and deletes it entirely
+;; Consumes an gobject name (symbol) and deletes it entirely
 ;; from core memory.
 (define (del-obj name)
   (set! core
     (filter (lambda (obj)
-	      (not (symbol=? name (object-name obj))))
+	      (not (symbol=? name (gobject-name obj))))
 	 core)))
 
 
@@ -220,23 +246,6 @@
 (define SKIPTIME 0.016)
 
 
-;; mov-obj: number number symbol -> void
-;; Consumes two numbers and an object name, and moves
-;; the object to the coordinates given by the number pair.
-(define (move-obj nx ny name)
-  (if (in-core? name)
-    (stor-obj
-      (make-object
-        name
-	(object-sprite (get-object name))
-        nx
-        ny
-        (object-velx (get-object name))
-        (object-vely (get-object name))))
-    (error (format "Cannot move object \"~a\" - does not exist!" (symbol->string name)))))
-
-
-
 ;; big-crunch: list[cmd] -> void
 ;; Runs the program contained within a list of commands.
 (define (big-crunch cmdlist)
@@ -246,6 +255,22 @@
 		(core-dump)
 		(sleep/yield SKIPTIME)))
 	    cmdlist))
+
+
+;; mov-obj: number number symbol -> void
+;; Consumes two numbers and an gobject name, and moves
+;; the gobject to the coordinates given by the number pair.
+(define (move-obj nx ny name)
+  (if (in-core? name)
+    (stor-obj
+      (make-gobject
+        name
+	(gobject-sprite (get-gobject name))
+        nx
+        ny
+        (gobject-velx (get-gobject name))
+        (gobject-vely (get-gobject name))))
+    (error (format "Cannot move gobject \"~a\" - does not exist!" (symbol->string name)))))
 
 
 ;; exec-cmd: cmd -> void
@@ -260,11 +285,11 @@
 
 	[(STOPOBJ? cmd)
 	 (stor-obj
-	   (make-object
+	   (make-gobject
 	     (STOPOBJ-obj cmd)					; Name
-	     (object-sprite (get-object (STOPOBJ-obj cmd)))	; Sp(r)ite
-	     (object-posx (get-object (STOPOBJ-obj cmd)))	; Posx
-	     (object-posy (get-object (STOPOBJ-obj cmd)))	; Posy
+	     (gobject-sprite (get-gobject (STOPOBJ-obj cmd)))	; Sp(r)ite
+	     (gobject-posx (get-gobject (STOPOBJ-obj cmd)))	; Posx
+	     (gobject-posy (get-gobject (STOPOBJ-obj cmd)))	; Posy
 	     0							; Velx
 	     0))]						; Vely
 
@@ -274,11 +299,11 @@
 	[(UDTOBJ? cmd)	; maybe split this off into an exec-UDTOBJ?
 	 (move-obj
 	     (+ 
-	       (object-posx (get-object (UDTOBJ-obj cmd)))	; Update posx
-	       (object-velx (get-object (UDTOBJ-obj cmd))))
+	       (gobject-posx (get-gobject (UDTOBJ-obj cmd)))	; Update posx
+	       (gobject-velx (get-gobject (UDTOBJ-obj cmd))))
 	     (+ 
-	       (object-posy (get-object (UDTOBJ-obj cmd)))	; Update posy
-	       (object-vely (get-object (UDTOBJ-obj cmd))))
+	       (gobject-posy (get-gobject (UDTOBJ-obj cmd)))	; Update posy
+	       (gobject-vely (get-gobject (UDTOBJ-obj cmd))))
 	     (UDTOBJ-obj cmd))]
 
 	[(DELOBJ? cmd)
@@ -299,42 +324,42 @@
 ;; eval-condcmd: cmd -> boolean
 ;; Consumes a conditional command (COLLIDE?, EDGECOLLIDE?, NOTCOND)
 ;; and returns the evaluation of that command in boolean form.
+;; Note: EDGECOLLIDE defines its edges as 10px inside the actual window border.
 (define (eval-condcmd cmd)
   (cond [(NOTCOND? cmd)
 	 (not (eval-condcmd (NOTCOND-cnd cmd)))] ; This used to read "(eval-condcmd cmd)", resulting in an infinitely expanding stack. FUN!
 	[(EDGECOLLIDE?? cmd)
 	 (or
-	   (> 0 (object-posx (get-object (EDGECOLLIDE?-obj cmd))))
-	   (< WIN_X (object-posx (get-object (EDGECOLLIDE?-obj cmd))))
-	   (> 0 (object-posy (get-object (EDGECOLLIDE?-obj cmd))))
-	   (< WIN_Y (object-posy (get-object (EDGECOLLIDE?-obj cmd)))))]
-	[(COLLIDE?? cmd) ; Yeah, really strange!
+	   (> 10 (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
+	   (< (- WIN_X 10) (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
+	   (> 10 (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))))
+	   (< (- WIN_Y 10) (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd)))))]
+	[(COLLIDE?? cmd) 
 	 (overlap? (COLLIDE?-obj1 cmd) (COLLIDE?-obj2 cmd))]))
 
 
-;; overlap?: object object -> boolean
-;; Consumes an two objects and returns true if their graphics overlap.
-;; This is supposed to be fairy high-precision, it should be "simple".
+;; overlap?: gobject gobject -> boolean
+;; Consumes an two gobjects and returns true if their graphics overlap.
 (define (overlap? obj1 obj2)
   (local [(define (circ-to-rect circ)			; Cheat at circle collision detection. Circles have corners, right?
-	   (make-object
-	     (object-name circ)
-	     (make-GENRECT (GENCIRCLE-rad (object-sprite circ))
-	        	   (GENCIRCLE-rad (object-sprite circ))
-			   (GENCIRCLE-color (object-sprite circ)))
-	     (object-posx circ)
-	     (object-posy circ)
+	   (make-gobject
+	     (gobject-name circ)
+	     (make-GENRECT (GENCIRCLE-rad (gobject-sprite circ))
+	        	   (GENCIRCLE-rad (gobject-sprite circ))
+			   (GENCIRCLE-color (gobject-sprite circ)))
+	     (gobject-posx circ)
+	     (gobject-posy circ)
 	     0 0))
 	  (define (intersect-rect obj1 obj2)
 	    (nand	; Return true if none of the failure conditions are true
-	      (> (object-posx obj1)			; obj2 1 is to the right of obj2
-	         (GENRECT-w (object-sprite obj2)))
-              (> (object-posx obj2)			; obj2 1 is to the right of obj1
-	         (GENRECT-w (object-sprite obj1)))
-              (> (object-posy obj1)
-	         (GENRECT-h (object-sprite obj2)))
-       	      (> (object-posy obj2)
-	         (GENRECT-h (object-sprite obj1)))))]
+	      (> (gobject-posx obj1)			; obj2 1 is to the right of obj2
+	         (GENRECT-w (gobject-sprite obj2)))
+              (> (gobject-posx obj2)			; obj2 1 is to the right of obj1
+	         (GENRECT-w (gobject-sprite obj1)))
+              (> (gobject-posy obj1)
+	         (GENRECT-h (gobject-sprite obj2)))
+       	      (> (gobject-posy obj2)
+	         (GENRECT-h (gobject-sprite obj1)))))]
     (intersect-rect (if (GENCIRCLE? obj1)
 		      (circ-to-rect obj1)
 		      obj1)
@@ -353,7 +378,7 @@
 
 
 ;; core-dump: void -> void
-;; Takes the core and dumps it. Just kidding, this displays all objects
+;; Takes the core and dumps it. Just kidding, this displays all gobjects
 ;; in the core and writes them to the screen.
 ;; Yes, all the "core" terminology from earlier was a buildup to this.
 (define (core-dump)
@@ -369,13 +394,14 @@
 			   (GENCIRCLE-color spr))]))
 	  (define (render-objlist lst) ;; Returns a scene.
 	    (cond [(cons? lst)
-		   (place-image (sprite-to-img (object-sprite (first lst)))
-				(object-posx (first lst))
-				(object-posy (first lst))
+		   (place-image (sprite-to-img (gobject-sprite (first lst)))
+				(gobject-posx (first lst))
+				(gobject-posy (first lst))
 				(render-objlist (rest lst)))]
 		  [else (empty-scene WIN_X WIN_Y)]))]
       (update-frame (render-objlist core))))
 
 
-(create-canvas WIN_X WIN_Y)
-(big-crunch anim-sample2)
+(test)
+;(create-canvas WIN_X WIN_Y)
+;(big-crunch anim-sample1)
