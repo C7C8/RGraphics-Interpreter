@@ -333,37 +333,27 @@
           (> 10 (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))))
           (< (- WIN_Y 10) (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd)))))]
         [(COLLIDE?? cmd) 
-         (overlap? (COLLIDE?-obj1 cmd) (COLLIDE?-obj2 cmd))]))
+         (overlap? (get-gobject (COLLIDE?-obj1 cmd)) (get-gobject (COLLIDE?-obj2 cmd)))]))
 
 
 ;; overlap?: gobject gobject -> boolean
 ;; Consumes an two gobjects and returns true if their graphics overlap.
-(define (overlap? obj1 obj2)
-  (local [(define (circ-to-rect circ)			; Cheat at circle collision detection. Circles have corners, right?
-            (make-gobject
-             (gobject-name circ)
-             (make-GENRECT (GENCIRCLE-rad (gobject-sprite circ))
-                           (GENCIRCLE-rad (gobject-sprite circ))
-                           (GENCIRCLE-color (gobject-sprite circ)))
-             (gobject-posx circ)
-             (gobject-posy circ)
-             0 0))
-          (define (intersect-rect obj1 obj2)
-            (nand	; Return true if none of the failure conditions are true
-             (> (gobject-posx obj1)			; obj2 1 is to the right of obj2
-                (GENRECT-w (gobject-sprite obj2)))
-             (> (gobject-posx obj2)			; obj2 1 is to the right of obj1
-                (GENRECT-w (gobject-sprite obj1)))
-             (> (gobject-posy obj1)
-                (GENRECT-h (gobject-sprite obj2)))
-             (> (gobject-posy obj2)
-                (GENRECT-h (gobject-sprite obj1)))))]
-    (intersect-rect (if (GENCIRCLE? obj1)
-                        (circ-to-rect obj1)
-                        obj1)
-                    (if (GENCIRCLE? obj2)
-                        (circ-to-rect obj2)
-                        obj2))))
+(define (overlap? o1 o2)
+  (local [(define (to-rect circ)  ; Cheat at circle collision detection. Circles have corners, right?
+            (if (GENCIRCLE? circ)
+                (make-GENRECT (GENCIRCLE-rad circ)
+                              (GENCIRCLE-rad circ)
+                              (GENCIRCLE-color circ))
+                circ))]
+    (nand	                                        ; Return true if none of the failure conditions are true
+     (> (gobject-posx o1)		              	; obj2 1 is to the right of obj2
+        (GENRECT-w (to-rect (gobject-sprite o2))))
+     (> (gobject-posx o2)		                ; obj2 1 is to the right of obj1
+        (GENRECT-w (to-rect (gobject-sprite o1))))
+     (> (gobject-posy o1)
+        (GENRECT-h (to-rect (gobject-sprite o2))))
+     (> (gobject-posy o2)
+        (GENRECT-h (to-rect (gobject-sprite o1)))))))
 
 ;; exec-while: WHILE -> void
 ;; Executes a WHILE command, recursively.
