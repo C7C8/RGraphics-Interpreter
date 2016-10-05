@@ -141,11 +141,11 @@
 |#
 (define anim-sample4 (list
 		       (make-WHILE true (list
-					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 1 0 5))
+					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 10 0 5))
 					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
 												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)
-					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 599 0 -5))
+					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 590 0 -5))
 					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
 												  (make-UDTOBJ 'bcirc)))
 					  (make-DELOBJ 'bcirc)))))
@@ -327,10 +327,10 @@
          (not (eval-condcmd (NOTCOND-cnd cmd)))] ; This used to read "(eval-condcmd cmd)", resulting in an infinitely expanding stack. FUN!
         [(EDGECOLLIDE?? cmd)
          (or
-          (> 10 (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
-          (< (- WIN_X 10) (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))))
-          (> 10 (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))))
-          (< (- WIN_Y 10) (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd)))))]
+          (< (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))) 10)
+          (> (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))) (- WIN_X 10))
+          (< (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))) 10 )
+          (> (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))) (- WIN_Y 10)))]
         [(COLLIDE?? cmd) 
          (overlap? (get-gobject (COLLIDE?-obj1 cmd)) (get-gobject (COLLIDE?-obj2 cmd)))]))
 
