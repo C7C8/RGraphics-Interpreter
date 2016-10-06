@@ -6,6 +6,9 @@
 ; || Christopher Myers ||
 ; =======================
 
+; Note: "gobject" used to be "object" until DrRacket complained about it.
+; Then I ran %s/object/gobject/g on it and DrRacket stopped complaining,
+; and all was good. Sorry if it seems like a strange term!
 
 ; =====================
 ; || LANGUAGE DESIGN ||
@@ -48,7 +51,7 @@
 (define-struct ADDOBJ (obj))
 
 ; A UDTOBJ is (make-UDTOBJ gobject)
-(define-struct UDTOBJ (obj) (make-inspector))
+(define-struct UDTOBJ (obj))
 
 ; A DELOBJ is (make-DELOBJ gobject)
 (define-struct DELOBJ (obj))
@@ -60,7 +63,7 @@
 (define-struct EDGECOLLIDE? (obj))
 
 ; A WHILE is (make-WHILE cmd list[cmd])
-(define-struct WHILE (cnd cmds) (make-inspector))
+(define-struct WHILE (cnd cmds))
 
 ; A IFCOND is (make-IFCOND cmd list[cmd] list[cmd])
 (define-struct IFCOND (cnd ctrue cfalse))
@@ -72,83 +75,10 @@
 (define-struct GENCIRCLE (rad color) (make-inspector))
 
 ; A GENRECT is (make-GENRECT number number symbol)
-(define-struct GENRECT (h w color) (make-inspector))
+(define-struct GENRECT (w h color) (make-inspector))
 
 ; An gobject is (make-gobject symbol graphic number number number number)
 (define-struct gobject (name sprite posx posy velx vely) (make-inspector))
-
-
-
-; ========================
-; || EXAMPLE ANIMATIONS ||
-; ========================
-
-
-#| Animation 1: 
-	"A red ball moving at a angle towards a blue wall until it hits the wall. 
-	At that point, the wall disappears and the ball moves back towards the left 
-	edge of the canvas, stopping when it hits the left edge of the canvas."
-|#
-(define anim-sample1 (list
-		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 1.5 0.25))
-		       (make-ADDOBJ (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
-		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
-				   (list (make-UDTOBJ 'rcirc)))
-		       (make-DELOBJ 'bwall)
-		       (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
-		       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 560 175 -1.52 0))
-		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
-				   (list (make-UDTOBJ 'rcirc)))
-		       (make-STOPOBJ 'rcirc)))
-
-
-
-#| Animation 2:
-	"A purple circle jumping to random locations around the canvas until it hits 
-	the top edge of the canvas."
-|#
-(define anim-sample2 (list
-		       (make-ADDOBJ (make-gobject 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
-		       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc)) (list
-									      (make-JMPOBJRAND 'pcirc)))
-		       (make-STOPOBJ 'pcirc)))
-
-
-
-#| Animation 3:
-	"An orange circle dropping straight down until it hits the green rectangle.
-	At that point, the red rectangle appears and the circle moves right until
-	it hits the red rectangle, after which the orange circle jumps to a random
-	location and stops."
-|#
-(define anim-sample3 (list
-		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
-		       (make-ADDOBJ (make-gobject 'grect (make-GENRECT 50 750 'green) 25 540 0 0))
-		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
-				   (list (make-UDTOBJ 'ocirc)))
-		       (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 512 50 'red) 750 25 0 0))
-		       (make-DELOBJ 'ocirc)
-		       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 500 5 0))
-		       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
-				   (list (make-UDTOBJ 'ocirc)))
-		       (make-STOPOBJ 'ocirc)
-		       (make-JMPOBJRAND 'ocirc)))
-
-
-
-#| Animation 4 (custom)
-	"A black ball bounces endlessly up and down."
-|#
-(define anim-sample4 (list
-		       (make-WHILE true (list
-					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 10 0 5))
-					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-												  (make-UDTOBJ 'bcirc)))
-					  (make-DELOBJ 'bcirc)
-					  (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 590 0 -5))
-					  (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-												  (make-UDTOBJ 'bcirc)))
-					  (make-DELOBJ 'bcirc)))))
 
 
 
@@ -186,9 +116,9 @@
 ;; No test cases because this relies on a global variable.
 (define (get-gobject name)
   (if (in-core? name)
-    (first (filter (lambda (obj)(symbol=? name (gobject-name obj))) core))
-    (error (format "Cannot retrieve gobject \"~a\" - does not exist!~n" (symbol->string name)))))
-	
+      (first (filter (lambda (obj)(symbol=? name (gobject-name obj))) core))
+      (error (format "Cannot retrieve gobject \"~a\" - does not exist!~n" (symbol->string name)))))
+
 
 ;; stor-obj: gobject -> void
 ;; Consumes an gobject and pushes it to core memory, overwriting
@@ -201,37 +131,36 @@
 ;; Consumes an gobject and pushes it to the given list, overwriting
 ;; anything else under the same name already there.
 (check-expect (stor-obj-in-list (make-gobject 'O1 0 0 0 0 0) empty)				; Storing gobjects in an empty list
-	      (list (make-gobject 'O1 0 0 0 0 0)))
+              (list (make-gobject 'O1 0 0 0 0 0)))
 (check-expect (stor-obj-in-list (make-gobject 'O2 0 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)))	; Storing gobjects in a list with one gobject
-	      (list (make-gobject 'O2 0 0 0 0 0)
-               (make-gobject 'O1 0 0 0 0 0)))
+              (list (make-gobject 'O2 0 0 0 0 0)
+                    (make-gobject 'O1 0 0 0 0 0)))
 (check-expect (stor-obj-in-list (make-gobject 'O3 0 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)	; Storing gobjects in a list with two gobjects
-								  (make-gobject 'O2 0 0 0 0 0)))
-	      (list (make-gobject 'O3 0 0 0 0 0)
-               (make-gobject 'O1 0 0 0 0 0)
-		    (make-gobject 'O2 0 0 0 0 0)))
+                                                                   (make-gobject 'O2 0 0 0 0 0)))
+              (list (make-gobject 'O3 0 0 0 0 0)
+                    (make-gobject 'O1 0 0 0 0 0)
+                    (make-gobject 'O2 0 0 0 0 0)))
 (check-expect (stor-obj-in-list (make-gobject 'O1 1 0 0 0 0) (list (make-gobject 'O1 0 0 0 0 0)))  ; Overwriting an gobject
-	      (list (make-gobject 'O1 1 0 0 0 0)))
-
+              (list (make-gobject 'O1 1 0 0 0 0)))
 (define (stor-obj-in-list obj lst)
   (if (obj-in-list? (gobject-name obj) lst) ;; Allows for addition of new variables
-    (map (lambda (o)
-	   (if (symbol=? (gobject-name o) (gobject-name obj))
-	     obj ; Replace prior-existing variable under given name
-	     o))
-	 lst)
-    (if (empty? lst)	;; If the core is empty, make a list out of an incoming gobject
-      (list obj)
-      (cons obj lst))))
+      (map (lambda (o)
+             (if (symbol=? (gobject-name o) (gobject-name obj))
+                 obj ; Replace prior-existing variable under given name
+                 o))
+           lst)
+      (if (empty? lst)	;; If the core is empty, make a list out of an incoming gobject
+          (list obj)
+          (cons obj lst))))
 
 ;; del-obj: symbol -> void
 ;; Consumes an gobject name (symbol) and deletes it entirely
 ;; from core memory.
 (define (del-obj name)
   (set! core
-    (filter (lambda (obj)
-	      (not (symbol=? name (gobject-name obj))))
-	 core)))
+        (filter (lambda (obj)
+                  (not (symbol=? name (gobject-name obj))))
+                core)))
 
 
 ; =============================
@@ -253,80 +182,78 @@
                 (core-dump)
                 (sleep/yield SKIPTIME)))
             cmdlist))
-            
+
 
 ;; mov-obj: number number symbol -> void
 ;; Consumes two numbers and an gobject name, and moves
 ;; the gobject to the coordinates given by the number pair.
 (define (move-obj nx ny name)
   (if (in-core? name)
-    (stor-obj
-      (make-gobject
+      (stor-obj
+       (make-gobject
         name
-	(gobject-sprite (get-gobject name))
+        (gobject-sprite (get-gobject name))
         nx
         ny
         (gobject-velx (get-gobject name))
         (gobject-vely (get-gobject name))))
-    (error (format "Cannot move gobject \"~a\" - does not exist!" (symbol->string name)))))
+      (error (format "Cannot move gobject \"~a\" - does not exist!" (symbol->string name)))))
 
 
 ;; exec-cmd: cmd -> void
 ;; Executes a given command. Doesn't accept commands that
-;; return booleans.
+;; return booleans. Most of these cmds aren't separated into
+;; helper functions as the are simple enough on their own.
 (define (exec-cmd cmd)
   (cond [(JMPOBJ? cmd)
-	 (move-obj (JMPOBJ-nx cmd) (JMPOBJ-ny cmd) (JMPOBJ-obj cmd))]
-
-	[(JMPOBJRAND? cmd)
-	 (move-obj (random WIN_X) (random WIN_Y) (JMPOBJRAND-obj cmd))]
-
-	[(STOPOBJ? cmd)
-	 (stor-obj
-	   (make-gobject
-	     (STOPOBJ-obj cmd)					; Name
-	     (gobject-sprite (get-gobject (STOPOBJ-obj cmd)))	; Sp(r)ite
-	     (gobject-posx (get-gobject (STOPOBJ-obj cmd)))	; Posx
-	     (gobject-posy (get-gobject (STOPOBJ-obj cmd)))	; Posy
-	     0							; Velx
-	     0))]						; Vely
-
-	[(ADDOBJ? cmd)
-	 (stor-obj (ADDOBJ-obj cmd))]
-
-	[(UDTOBJ? cmd)	; maybe split this off into an exec-UDTOBJ?
-	 (move-obj
-	     (+ 
-	       (gobject-posx (get-gobject (UDTOBJ-obj cmd)))	; Update posx
-	       (gobject-velx (get-gobject (UDTOBJ-obj cmd))))
-	     (+ 
-	       (gobject-posy (get-gobject (UDTOBJ-obj cmd)))	; Update posy
-	       (gobject-vely (get-gobject (UDTOBJ-obj cmd))))
-	     (UDTOBJ-obj cmd))]
-
-	[(DELOBJ? cmd)
-	 (del-obj (DELOBJ-obj cmd))]
-
-	[(WHILE? cmd)
-	 (exec-while cmd)]
-
-	[(IFCOND? cmd)
-	 (if (eval-condcmd (IFCOND-cnd cmd))
-	   (big-crunch (IFCOND-ctrue cmd))
-	   (big-crunch (IFCOND-cfalse cmd)))]
-
-	[else
-	  (error (format "invalid command: ~a~n" cmd))]))
+         (move-obj (JMPOBJ-nx cmd) (JMPOBJ-ny cmd) (JMPOBJ-obj cmd))]
+        [(JMPOBJRAND? cmd)
+         (move-obj (random WIN_X) (random WIN_Y) (JMPOBJRAND-obj cmd))]
+        [(STOPOBJ? cmd)
+         (stor-obj
+          (make-gobject
+           (STOPOBJ-obj cmd)				; Name
+           (gobject-sprite (get-gobject (STOPOBJ-obj cmd))); Sprite
+           (gobject-posx (get-gobject (STOPOBJ-obj cmd)))	; Posx
+           (gobject-posy (get-gobject (STOPOBJ-obj cmd)))	; Posy
+           0						; Velx
+           0))]						; Vely
+        [(ADDOBJ? cmd)
+         (stor-obj (ADDOBJ-obj cmd))]
+        [(UDTOBJ? cmd)
+         (move-obj
+          (+ 
+           (gobject-posx (get-gobject (UDTOBJ-obj cmd)))	; Update posx
+           (gobject-velx (get-gobject (UDTOBJ-obj cmd))))
+          (+ 
+           (gobject-posy (get-gobject (UDTOBJ-obj cmd)))	; Update posy
+           (gobject-vely (get-gobject (UDTOBJ-obj cmd))))
+          (UDTOBJ-obj cmd))]
+        [(DELOBJ? cmd)
+         (del-obj (DELOBJ-obj cmd))]
+        [(WHILE? cmd)
+         (exec-while cmd)]
+        [(IFCOND? cmd)
+         (if (eval-condcmd (IFCOND-cnd cmd))
+             (big-crunch (IFCOND-ctrue cmd))
+             (big-crunch (IFCOND-cfalse cmd)))]
+        [else
+         (error (format "invalid command: ~a~n" cmd))]))
 
 ;; eval-condcmd: cmd -> boolean
 ;; Consumes a conditional command (COLLIDE?, EDGECOLLIDE?, NOTCOND)
 ;; and returns the evaluation of that command in boolean form.
 ;; Note: EDGECOLLIDE defines its edges as 10px inside the actual window border.
+(check-expect (eval-condcmd true) true)
+(check-expect (eval-condcmd false) false)
+(check-expect (eval-condcmd (make-NOTCOND false)) true)
 (define (eval-condcmd cmd)
-  (cond [(NOTCOND? cmd)
-         (not (eval-condcmd (NOTCOND-cnd cmd)))] ; This used to read "(eval-condcmd cmd)", resulting in an infinitely expanding stack. FUN!
-        [(EDGECOLLIDE?? cmd)
-         (or
+  (cond [(boolean? cmd)
+         cmd]
+         [(NOTCOND? cmd)
+         (not (eval-condcmd (NOTCOND-cnd cmd)))]
+        [(EDGECOLLIDE?? cmd) ; Everything below here cannot be tested as they rely on a
+         (or                 ; globally-defined memory
           (< (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))) 10)
           (> (gobject-posx (get-gobject (EDGECOLLIDE?-obj cmd))) (- WIN_X 10))
           (< (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))) 10 )
@@ -337,14 +264,14 @@
 
 ;; overlap?: gobject gobject -> boolean
 ;; Consumes an two gobjects and returns true if their graphics overlap.
-
+;; There are a lot of check-expects for this one because it's very complex.
 (check-expect (overlap? (make-gobject 'o1 (make-GENRECT 40 40 'red) 604 142 3 0.25)  ; Retangles overlap
-                        (make-gobject 'o2 (make-GENRECT 400 20 'blue) 600 50 0 0))
+                        (make-gobject 'o2 (make-GENRECT 20 400 'blue) 600 50 0 0))
               true)
-(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Rectanges don't overlap
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Rectangles don't overlap
                         (make-gobject 'o2 (make-GENRECT 10 10 'red) 30 30 0 0))
               false)
-(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Rectange corners overlap
+(check-expect (overlap? (make-gobject 'o1 (make-GENRECT 10 10 'red) 0 0 0 0)  ; Rectangle corners overlap
                         (make-gobject 'o2 (make-GENRECT 10 10 'red) 5 5 0 0))
               true)
 (check-expect (overlap? (make-gobject 'o1 (make-GENCIRCLE 5 'red) 0 0 0 0)    ; Circle corners overlap
@@ -354,10 +281,10 @@
                         (make-gobject 'o2 (make-GENCIRCLE 10 'red) 30 30 0 0))
               false)
 (check-expect (overlap? (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 3 0.25)   ; Rectangle doesn't overlap with circle
-                        (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
+                        (make-gobject 'bwall (make-GENRECT 20 400 'blue) 600 50 0 0))
               false)
 (check-expect (overlap? (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 604 142 3 0.25)   ; Rectangle overlaps with circle
-                        (make-gobject 'bwall (make-GENRECT 400 20 'blue) 600 50 0 0))
+                        (make-gobject 'bwall (make-GENRECT 20 400 'blue) 600 50 0 0))
               true)
 (define (overlap? o1 o2)
   (local [(define (to-rect circ)  ; Cheat at circle collision detection. Circles have corners, right?
@@ -367,9 +294,9 @@
                               (GENCIRCLE-color circ))
                 circ))]
     (nor	                                        ; Return true if none of the failure conditions are true
-     (> (gobject-posx o1)		              	; obj2 1 is to the right of obj2
+     (> (gobject-posx o1)
         (+ (gobject-posx o2) (GENRECT-w (to-rect (gobject-sprite o2)))))
-     (> (gobject-posx o2)		                ; obj2 1 is to the right of obj1
+     (> (gobject-posx o2)
         (+ (gobject-posx o1) (GENRECT-w (to-rect (gobject-sprite o1)))))
      (> (gobject-posy o1)
         (+ (gobject-posy o2) (GENRECT-h (to-rect (gobject-sprite o2)))))
@@ -419,6 +346,88 @@
     (update-frame (render-objlist core))))
 
 
-;(test)
+
+; ========================
+; || EXAMPLE ANIMATIONS ||
+; ========================
+
+
+#| Animation 1: 
+	"A red ball moving at a angle towards a blue wall until it hits the wall. 
+	At that point, the wall disappears and the ball moves back towards the left 
+	edge of the canvas, stopping when it hits the left edge of the canvas."
+|#
+(define anim-sample1 (list
+                      (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 1.5 0.25))
+                      (make-ADDOBJ (make-gobject 'bwall (make-GENRECT 20 400 'blue) 600 50 0 0))
+                      (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
+                                  (list (make-UDTOBJ 'rcirc)))
+                      (make-DELOBJ 'bwall)
+                      (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
+                      (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 560 175 -1.52 0))
+                      (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
+                                  (list (make-UDTOBJ 'rcirc)))
+                      (make-STOPOBJ 'rcirc)))
+
+
+#| Animation 2:
+	"A purple circle jumping to random locations around the canvas until it hits 
+	the top edge of the canvas."
+
+   Note: due to the frame update time here (0.016 seconds, for about 60FPS) the
+   purple circle may reach an edge and stop very quickly, or seemingly instantly
+   from the viewer's perspective.
+|#
+(define anim-sample2 (list
+                      (make-ADDOBJ (make-gobject 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
+                      (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc)) (list
+                                                                             (make-JMPOBJRAND 'pcirc)))
+                      (make-STOPOBJ 'pcirc)))
+
+
+#| Animation 3:
+	"An orange circle dropping straight down until it hits the green rectangle.
+	At that point, the red rectangle appears and the circle moves right until
+	it hits the red rectangle, after which the orange circle jumps to a random
+	location and stops."
+|#
+(define anim-sample3 (list
+                      (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
+                      (make-ADDOBJ (make-gobject 'grect (make-GENRECT 750 50 'green) 25 540 0 0))
+                      (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
+                                  (list (make-UDTOBJ 'ocirc)))
+                      (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 50 512 'red) 750 25 0 0))
+                      (make-DELOBJ 'ocirc)
+                      (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 500 5 0))
+                      (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
+                                  (list (make-UDTOBJ 'ocirc)))
+                      (make-STOPOBJ 'ocirc)
+                      (make-JMPOBJRAND 'ocirc)))
+
+
+#| Animation 4 (custom)
+	"A black ball bounces endlessly up and down."
+|#
+(define anim-sample4 (list
+                      (make-WHILE true (list
+                                        (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 10 0 5))
+                                        (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+                                                                                               (make-UDTOBJ 'bcirc)))
+                                        (make-DELOBJ 'bcirc)
+                                        (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 590 0 -5))
+                                        (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
+                                                                                               (make-UDTOBJ 'bcirc)))
+                                        (make-DELOBJ 'bcirc)))))
+
+
+(test)
 (create-canvas WIN_X WIN_Y) 
-(big-crunch anim-sample3)
+
+
+
+;; =========================
+;; || ANIMATION EXECUTION ||
+;; =========================
+
+
+(big-crunch anim-sample4)
