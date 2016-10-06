@@ -88,24 +88,24 @@
 
 
 ; =============================
-; CORE MEMORY FUNCTIONS
+; MEMORY FUNCTIONS
 
 
 ;; list[gobject]
-(define core empty)
+(define mem empty)
 
 
-;; in-core?: symbol -> boolean
-;; Consumes a symbol and returns true if that an gobject by that names exists
-;; in core memory.
-(define (in-core? name)
-  (obj-in-list? name core))
+;; in-mem?: symbol -> boolean
+;; Consumes a symbol and returns true if that a gobject by that name exists
+;; inmemory.
+(define (in-mem? name)
+  (obj-in-list? name mem))
 
 
 ;; obj-in-list? symbol list[obj] -> boolean
 ;; Consumes a symbol and a list of gobjects and retrusn true
 ;; if that gobject is present in the given list.
-(check-expect (obj-in-list? 'DNE core) false) ;; Works because core is defined as empty above.
+(check-expect (obj-in-list? 'DNE mem) false) ;; Works because mem is defined as empty above.
 (check-expect (obj-in-list? 'DE (list (make-gobject 'DE 0 0 0 0 0))) true)
 (define (obj-in-list? name lst)
   (not (empty? (filter (lambda (obj)(symbol=? name (gobject-name obj))) lst))))
@@ -115,16 +115,16 @@
 ;; Conusmes a symbol and returns the gobject associated with that symbol.
 ;; No test cases because this relies on a global variable.
 (define (get-gobject name)
-  (if (in-core? name)
-      (first (filter (lambda (obj)(symbol=? name (gobject-name obj))) core))
+  (if (in-mem? name)
+      (first (filter (lambda (obj)(symbol=? name (gobject-name obj))) mem))
       (error (format "Cannot retrieve gobject \"~a\" - does not exist!~n" (symbol->string name)))))
 
 
 ;; stor-obj: gobject -> void
-;; Consumes an gobject and pushes it to core memory, overwriting
+;; Consumes an gobject and pushes it to memory, overwriting
 ;; anything else under the same name already there.
 (define (stor-obj obj)
-  (set! core (stor-obj-in-list obj core)))
+  (set! mem (stor-obj-in-list obj mem)))
 
 
 ;; stor-obj-in-list: gobject list[gobject] -> list[gobject]
@@ -149,18 +149,18 @@
                  obj ; Replace prior-existing variable under given name
                  o))
            lst)
-      (if (empty? lst)	;; If the core is empty, make a list out of an incoming gobject
+      (if (empty? lst)	;; If mem is empty, make a list out of an incoming gobject
           (list obj)
           (cons obj lst))))
 
 ;; del-obj: symbol -> void
 ;; Consumes an gobject name (symbol) and deletes it entirely
-;; from core memory.
+;; from memory.
 (define (del-obj name)
-  (set! core
+  (set! mem
         (filter (lambda (obj)
                   (not (symbol=? name (gobject-name obj))))
-                core)))
+                mem)))
 
 
 ; =============================
@@ -179,7 +179,7 @@
   (for-each (lambda (cmd)
               (begin
                 (exec-cmd cmd)
-                (core-dump)
+                (render-objects)
                 (sleep/yield SKIPTIME)))
             cmdlist))
 
@@ -188,7 +188,7 @@
 ;; Consumes two numbers and an gobject name, and moves
 ;; the gobject to the coordinates given by the number pair.
 (define (move-obj nx ny name)
-  (if (in-core? name)
+  (if (in-mem? name)
       (stor-obj
        (make-gobject
         name
@@ -313,11 +313,9 @@
       (void)))
 
 
-;; core-dump: void -> void
-;; Takes the core and dumps it. Just kidding, this displays all gobjects
-;; in the core and writes them to the screen.
-;; Yes, all the "core" terminology from earlier was a buildup to this.
-(define (core-dump)
+;; render-objects: void -> void
+;; Renders all objects stored in memory.
+(define (render-objects)
   (local [(define (sprite-to-img spr)
             (cond [(GENRECT? spr)
                    (rectangle (GENRECT-w spr)
@@ -343,7 +341,7 @@
                                 (gycord (first lst))
                                 (render-objlist (rest lst)))]
                   [else (empty-scene WIN_X WIN_Y)]))]
-    (update-frame (render-objlist core))))
+    (update-frame (render-objlist mem))))
 
 
 
@@ -430,4 +428,4 @@
 ;; =========================
 
 
-(big-crunch anim-sample4)
+(big-crunch anim-sample1)
