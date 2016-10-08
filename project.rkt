@@ -2,13 +2,8 @@
 (require test-engine/racket-tests)
 (require "world-cs1102.rkt")
 
-; =======================
-; || Christopher Myers ||
-; =======================
+;; Christopher Myers
 
-; Note: "gobject" used to be "object" until DrRacket complained about it.
-; Then I ran %s/object/gobject/g on it and DrRacket stopped complaining,
-; and all was good. Sorry if it seems like a strange term!
 
 ; =====================
 ; || LANGUAGE DESIGN ||
@@ -30,45 +25,42 @@
 ;  -(make-EDGECOLLIDE? symbol)
 ;  -(make-NOTCOND condcmd)
 ;
-; An gobject is one of
-;  -(make-gobject symbol graphic number number number number)
-;
 ; A graphic is one of
 ;  -(make-GENCIRCLE number symbol)
 ;  -(make-GENRECT number number symbol)
 
 
-; A JMPOBJ is (make-JMPOBJ gobject number number)
+; A JMPOBJ is (make-JMPOBJ symbol number number)
 (define-struct JMPOBJ (obj nx ny))
 
-; A JMPOBJ is (make-JMPOBJRAND gobject)
+; A JMPOBJ is (make-JMPOBJRAND symbol)
 (define-struct JMPOBJRAND (obj))
 
-; A STOPOBJ is (make-STOPOBJ gobject)
+; A STOPOBJ is (make-STOPOBJ symbol)
 (define-struct STOPOBJ (obj))
 
 ; A ADDOBJ is (make-ADDOBJ gobject)
 (define-struct ADDOBJ (obj))
 
-; A UDTOBJ is (make-UDTOBJ gobject)
+; A UDTOBJ is (make-UDTOBJ symbol)
 (define-struct UDTOBJ (obj))
 
-; A DELOBJ is (make-DELOBJ gobject)
+; A DELOBJ is (make-DELOBJ symbol)
 (define-struct DELOBJ (obj))
 
-; A COLLIDE? is (make-COLLIDE? gobject gobject)
+; A COLLIDE? is (make-COLLIDE? symbol symbol)
 (define-struct COLLIDE? (obj1 obj2))
 
-; A EDGECOLLIDE? is (make-EDGECOLLIDE? gobject)
+; A EDGECOLLIDE? is (make-EDGECOLLIDE? symbol)
 (define-struct EDGECOLLIDE? (obj))
 
-; A WHILE is (make-WHILE cmd list[cmd])
+; A WHILE is (make-WHILE condcmd list[cmd])
 (define-struct WHILE (cnd cmds))
 
-; A IFCOND is (make-IFCOND cmd list[cmd] list[cmd])
+; A IFCOND is (make-IFCOND condcmd list[cmd] list[cmd])
 (define-struct IFCOND (cnd ctrue cfalse))
 
-; A NOT is (make-NOTCOND cmd)
+; A NOT is (make-NOTCOND condcmd)
 (define-struct NOTCOND (cnd))
 
 ; A GENCIRCLE is (make-GENCIRCLE number symbol)
@@ -246,11 +238,11 @@
 ;; Note: EDGECOLLIDE defines its edges as 10px inside the actual window border.
 (check-expect (eval-condcmd true) true)
 (check-expect (eval-condcmd false) false)
-(check-expect (eval-condcmd (make-NOTCOND false)) true)
+(check-expect (eval-condcmd (make-NOTCOND false)) true) ; Can't check either COLLIDE because they involve a global variable
 (define (eval-condcmd cmd)
   (cond [(boolean? cmd)
          cmd]
-         [(NOTCOND? cmd)
+        [(NOTCOND? cmd)
          (not (eval-condcmd (NOTCOND-cnd cmd)))]
         [(EDGECOLLIDE?? cmd) ; Everything below here cannot be tested as they rely on a
          (or                 ; globally-defined memory
@@ -286,6 +278,7 @@
 (check-expect (overlap? (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 604 142 3 0.25)   ; Rectangle overlaps with circle
                         (make-gobject 'bwall (make-GENRECT 20 400 'blue) 600 50 0 0))
               true)
+
 (define (overlap? o1 o2)
   (local [(define (to-rect circ)  ; Cheat at circle collision detection. Circles have corners, right?
             (if (GENCIRCLE? circ)
@@ -302,6 +295,7 @@
         (+ (gobject-posy o2) (GENRECT-h (to-rect (gobject-sprite o2)))))
      (> (gobject-posy o2)
         (+ (gobject-posy o1) (GENRECT-h (to-rect (gobject-sprite o1))))))))
+
 
 ;; exec-while: WHILE -> void
 ;; Executes a WHILE command, recursively.
@@ -349,11 +343,11 @@
 ;; || LANGUAGE MACROS ||
 ;; =====================
 
-;; Is this a macro that writes macros? Why yes, yes it is!
-;; More specifically, this macro defines a "keyword" macro,
-;; generating macros on the fly for arbitrary keywords. It's
-;; realy just a simplification of the define-syntax/syntax-rules
-;; construct, but it's mucher cleaner and easier to read.
+
+;; Defines a "keyword" macro, generating macros on the fly for
+;; arbitrary keywords. It's realy just a simplification of the
+;; define-syntax/syntax-rules construct, but it's mucher cleaner
+;; and easier to read.
 (define-syntax kw
   (syntax-rules (: ->)
     [(kw id : [orig-form -> new-form] ...)     
@@ -363,19 +357,30 @@
            new-form] ...))]))
 
 (kw PROGRAM      : [(PROGRAM cmd ...) -> (list cmd ...)]) ; This one is just to obscure the underlying "list" call
+
 (kw DELOBJ       : [(DELOBJ id)  -> (make-DELOBJ 'id)])
+
 (kw UDTOBJ       : [(UDTOBJ id)  -> (make-UDTOBJ 'id)])
+
 (kw STOPOBJ      : [(STOPOBJ id) -> (make-STOPOBJ 'id)])
+
 (kw ADDOBJ       : [(ADDOBJ name (GENCIRCLE rad col) posx posy velx vely) ->
                     (make-ADDOBJ (make-gobject 'name (make-GENCIRCLE rad 'col) posx posy velx vely))]
                    [(ADDOBJ name (GENRECT w h col) posx posy velx vely) ->
                     (make-ADDOBJ (make-gobject 'name (make-GENRECT w h 'col) posx posy velx vely))])
+
 (kw JMPOBJ       : [(JMPOBJ id nx ny) -> (make-JMPOBJ 'id nx ny)])
+
 (kw JMPOBJRAND   : [(JMPOBJRAND id) -> (make-JMPOBJRAND 'id)])
+
 (kw COLLIDE?     : [(COLLIDE? id1 id2)  -> (make-COLLIDE? 'id1 'id2)])
+
 (kw EDGECOLLIDE? : [(EDGECOLLIDE? id)   -> (make-EDGECOLLIDE? 'id)])
+
 (kw NOTCOND      : [(NOTCOND condition) -> (make-NOTCOND condition)])
+
 (kw WHILE        : [(WHILE condition actions ... ) -> (make-WHILE condition (list actions ...))])
+
 (kw IFCOND       : [(IFCOND condition (ctrueact ...) (cfalseact ...)) ->
                     (make-IFCOND condition (list ctrueact ...) (list cfalseact ...))])
 
