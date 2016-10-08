@@ -461,6 +461,6 @@
 ;; =========================
 
 
-;(test)
-(create-canvas WIN_X WIN_Y) 
+(check-expect (create-canvas WIN_X WIN_Y) true) ; This always outputs an annoying "true" to the console,
+(test)                                          ; so it's a check-expect now.
 (run-animation anim-sample4)
