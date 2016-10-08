@@ -349,10 +349,36 @@
 ;; || LANGUAGE MACROS ||
 ;; =====================
 
-(define-syntax animprog
-  (syntax-rules ()
-    [(program cmd ...)
-     (list cmd ...)]))
+;; Is this a macro that writes macros? Why yes, yes it is!
+;; More specifically, this macro defines a "keyword" macro,
+;; generating macros on the fly for arbitrary keywords. It's
+;; realy just a simplification of the define-syntax/syntax-rules
+;; construct, but it's mucher cleaner and easier to read.
+(define-syntax kw
+  (syntax-rules (: ->)
+    [(kw id : [orig-form -> new-form] ...)     
+     (define-syntax id
+        (syntax-rules ()
+          [orig-form
+           new-form] ...))]))
+
+(kw PROGRAM      : [(PROGRAM cmd ...) -> (list cmd ...)]) ; This one is just to obscure the underlying "list" call
+(kw DELOBJ       : [(DELOBJ id)  -> (make-DELOBJ 'id)])
+(kw UDTOBJ       : [(UDTOBJ id)  -> (make-UDTOBJ 'id)])
+(kw STOPOBJ      : [(STOPOBJ id) -> (make-STOPOBJ 'id)])
+(kw ADDOBJ       : [(ADDOBJ name (GENCIRCLE rad col) posx posy velx vely) ->
+                    (make-ADDOBJ (make-gobject 'name (make-GENCIRCLE rad 'col) posx posy velx vely))]
+                   [(ADDOBJ name (GENRECT w h col) posx posy velx vely) ->
+                    (make-ADDOBJ (make-gobject 'name (make-GENRECT w h 'col) posx posy velx vely))])
+(kw JMPOBJ       : [(JMPOBJ id nx ny) -> (make-JMPOBJ 'id nx ny)])
+(kw JMPOBJRAND   : [(JMPOBJRAND id) -> (make-JMPOBJRAND 'id)])
+(kw COLLIDE?     : [(COLLIDE? id1 id2)  -> (make-COLLIDE? 'id1 'id2)])
+(kw EDGECOLLIDE? : [(EDGECOLLIDE? id)   -> (make-EDGECOLLIDE? 'id)])
+(kw NOTCOND      : [(NOTCOND condition) -> (make-NOTCOND condition)])
+(kw WHILE        : [(WHILE condition actions ... ) -> (make-WHILE condition (list actions ...))])
+(kw IFCOND       : [(IFCOND condition (ctrueact ...) (cfalseact ...)) ->
+                    (make-IFCOND condition (list ctrueact ...) (list cfalseact ...))])
+
 
 ; ========================
 ; || EXAMPLE ANIMATIONS ||
@@ -364,17 +390,21 @@
 	At that point, the wall disappears and the ball moves back towards the left 
 	edge of the canvas, stopping when it hits the left edge of the canvas."
 |#
-(define anim-sample1 (program
-                      (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 1.5 0.25))
-                      (make-ADDOBJ (make-gobject 'bwall (make-GENRECT 20 400 'blue) 600 50 0 0))
-                      (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
-                                  (list (make-UDTOBJ 'rcirc)))
-                      (make-DELOBJ 'bwall)
-                      (make-DELOBJ 'rcirc) ;; Needs to be recreated. I assume that the animator would know the location of the collision?
-                      (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 560 175 -1.52 0))
-                      (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'rcirc))
-                                  (list (make-UDTOBJ 'rcirc)))
-                      (make-STOPOBJ 'rcirc)))
+(define anim-sample1 (PROGRAM
+                      (ADDOBJ rcirc (GENCIRCLE 20 red) 100 100 1.5 0.25)
+                      (ADDOBJ bwall (GENRECT 20 400 blue) 600 50 0 0)
+                      (UDTOBJ rcirc)
+                      (WHILE (NOTCOND (COLLIDE? rcirc bwall))
+                                  (UDTOBJ rcirc))
+                      (IFCOND (NOTCOND (COLLIDE? rcirc bwall))
+                              ((UDTOBJ rcirc))
+                              ((DELOBJ rcirc)))
+                      (DELOBJ bwall)
+                      (DELOBJ rcirc)
+                      (ADDOBJ rcirc (GENCIRCLE 20 red) 560 175 -1.52 0)
+                      (WHILE (NOTCOND (EDGECOLLIDE? rcirc))
+                                  (UDTOBJ rcirc))
+                      (STOPOBJ rcirc)))
 
 
 #| Animation 2:
@@ -385,11 +415,10 @@
    purple circle may reach an edge and stop very quickly, or seemingly instantly
    from the viewer's perspective.
 |#
-(define anim-sample2 (program
-                      (make-ADDOBJ (make-gobject 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
-                      (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc)) (list
-                                                                             (make-JMPOBJRAND 'pcirc)))
-                      (make-STOPOBJ 'pcirc)))
+(define anim-sample2 (PROGRAM
+                      (ADDOBJ pcirc (GENCIRCLE 20 purple) 400 300 0 0)
+                      (WHILE (NOTCOND (EDGECOLLIDE? pcirc)) (JMPOBJRAND pcirc))
+                      (STOPOBJ pcirc)))
 
 
 #| Animation 3:
@@ -398,33 +427,33 @@
 	it hits the red rectangle, after which the orange circle jumps to a random
 	location and stops."
 |#
-(define anim-sample3 (program
-                      (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
-                      (make-ADDOBJ (make-gobject 'grect (make-GENRECT 750 50 'green) 25 540 0 0))
-                      (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
-                                  (list (make-UDTOBJ 'ocirc)))
-                      (make-ADDOBJ (make-gobject 'rrect (make-GENRECT 50 512 'red) 750 25 0 0))
-                      (make-DELOBJ 'ocirc)
-                      (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 500 5 0))
-                      (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'rrect))
-                                  (list (make-UDTOBJ 'ocirc)))
-                      (make-STOPOBJ 'ocirc)
-                      (make-JMPOBJRAND 'ocirc)))
+(define anim-sample3 (PROGRAM
+                      (ADDOBJ ocirc (GENCIRCLE 20 orange) 100 1 0 5)
+                      (ADDOBJ grect (GENRECT 750 50 green) 25 540 0 0)
+                      (WHILE (NOTCOND (COLLIDE? ocirc grect))
+                             (UDTOBJ ocirc))
+                      (ADDOBJ rrect (GENRECT 50 512 red) 750 25 0 0)
+                      (DELOBJ ocirc)
+                      (ADDOBJ ocirc (GENCIRCLE 20 orange) 100 500 5 0)
+                      (WHILE (NOTCOND (COLLIDE? ocirc rrect))
+                                  (UDTOBJ ocirc))
+                      (STOPOBJ ocirc)
+                      (JMPOBJRAND ocirc)))
 
 
 #| Animation 4 (custom)
 	"A black ball bounces endlessly up and down."
 |#
-(define anim-sample4 (program
-                      (make-WHILE true (list
-                                        (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 10 0 5))
-                                        (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-                                                                                               (make-UDTOBJ 'bcirc)))
-                                        (make-DELOBJ 'bcirc)
-                                        (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 590 0 -5))
-                                        (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
-                                                                                               (make-UDTOBJ 'bcirc)))
-                                        (make-DELOBJ 'bcirc)))))
+(define anim-sample4 (PROGRAM
+                      (WHILE true
+                             (ADDOBJ bcirc (GENCIRCLE 20 black) 300 10 0 5)
+                             (WHILE (NOTCOND (EDGECOLLIDE? bcirc))
+                                    (UDTOBJ bcirc))
+                             (DELOBJ bcirc)
+                             (ADDOBJ bcirc (GENCIRCLE 20 black) 300 590 0 -5)
+                             (WHILE (NOTCOND (EDGECOLLIDE? bcirc))
+                                    (UDTOBJ bcirc))
+                             (DELOBJ bcirc))))
 
 
 ;; =========================
@@ -433,5 +462,5 @@
 
 
 ;(test)
-;(create-canvas WIN_X WIN_Y) 
-;(run-animation anim-sample1)
+(create-canvas WIN_X WIN_Y) 
+(run-animation anim-sample4)
