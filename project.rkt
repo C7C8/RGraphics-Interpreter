@@ -173,9 +173,9 @@
 (define SKIPTIME 0.016)
 
 
-;; big-crunch: list[cmd] -> void
+;; run-animation: list[cmd] -> void
 ;; Runs the program contained within a list of commands.
-(define (big-crunch cmdlist)
+(define (run-animation cmdlist)
   (for-each (lambda (cmd)
               (begin
                 (exec-cmd cmd)
@@ -235,8 +235,8 @@
          (exec-while cmd)]
         [(IFCOND? cmd)
          (if (eval-condcmd (IFCOND-cnd cmd))
-             (big-crunch (IFCOND-ctrue cmd))
-             (big-crunch (IFCOND-cfalse cmd)))]
+             (run-animation (IFCOND-ctrue cmd))
+             (run-animation (IFCOND-cfalse cmd)))]
         [else
          (error (format "invalid command: ~a~n" cmd))]))
 
@@ -308,7 +308,7 @@
 (define (exec-while cmd)
   (if (eval-condcmd (WHILE-cnd cmd))
       (begin
-        (big-crunch (WHILE-cmds cmd)) ; what the f**k?
+        (run-animation (WHILE-cmds cmd)) ; what the f**k?
         (exec-while cmd))
       (void)))
 
@@ -345,6 +345,15 @@
 
 
 
+;; =====================
+;; || LANGUAGE MACROS ||
+;; =====================
+
+(define-syntax animprog
+  (syntax-rules ()
+    [(program cmd ...)
+     (list cmd ...)]))
+
 ; ========================
 ; || EXAMPLE ANIMATIONS ||
 ; ========================
@@ -355,7 +364,7 @@
 	At that point, the wall disappears and the ball moves back towards the left 
 	edge of the canvas, stopping when it hits the left edge of the canvas."
 |#
-(define anim-sample1 (list
+(define anim-sample1 (program
                       (make-ADDOBJ (make-gobject 'rcirc (make-GENCIRCLE 20 'red) 100 100 1.5 0.25))
                       (make-ADDOBJ (make-gobject 'bwall (make-GENRECT 20 400 'blue) 600 50 0 0))
                       (make-WHILE (make-NOTCOND (make-COLLIDE? 'rcirc 'bwall))
@@ -376,7 +385,7 @@
    purple circle may reach an edge and stop very quickly, or seemingly instantly
    from the viewer's perspective.
 |#
-(define anim-sample2 (list
+(define anim-sample2 (program
                       (make-ADDOBJ (make-gobject 'pcirc (make-GENCIRCLE 20 'purple) 400 300 0 0))
                       (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'pcirc)) (list
                                                                              (make-JMPOBJRAND 'pcirc)))
@@ -389,7 +398,7 @@
 	it hits the red rectangle, after which the orange circle jumps to a random
 	location and stops."
 |#
-(define anim-sample3 (list
+(define anim-sample3 (program
                       (make-ADDOBJ (make-gobject 'ocirc (make-GENCIRCLE 20 'orange) 100 1 0 5))
                       (make-ADDOBJ (make-gobject 'grect (make-GENRECT 750 50 'green) 25 540 0 0))
                       (make-WHILE (make-NOTCOND (make-COLLIDE? 'ocirc 'grect))
@@ -406,7 +415,7 @@
 #| Animation 4 (custom)
 	"A black ball bounces endlessly up and down."
 |#
-(define anim-sample4 (list
+(define anim-sample4 (program
                       (make-WHILE true (list
                                         (make-ADDOBJ (make-gobject 'bcirc (make-GENCIRCLE 20 'black) 300 10 0 5))
                                         (make-WHILE (make-NOTCOND (make-EDGECOLLIDE? 'bcirc)) (list
@@ -418,14 +427,11 @@
                                         (make-DELOBJ 'bcirc)))))
 
 
-(test)
-(create-canvas WIN_X WIN_Y) 
-
-
-
 ;; =========================
 ;; || ANIMATION EXECUTION ||
 ;; =========================
 
 
-(big-crunch anim-sample1)
+;(test)
+;(create-canvas WIN_X WIN_Y) 
+;(run-animation anim-sample1)
