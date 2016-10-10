@@ -1,8 +1,42 @@
-#!/usr/bin/racket
 (require test-engine/racket-tests)
 (require "world-cs1102.rkt")
 
-;; Christopher Myers
+#| Christopher Myers 2016
+
+====================
+|| PROJECT REPORT ||
+====================
+
+1. In order to run this program, you need only execute "(run-animation anim)" where
+   "anim" is a list of commands. The four defined animations (detailed near the end
+   of this file) are anim-sample1, anim-sample2, anim-sample3, and anim-sample4.
+ 
+2. This interpreter is fully functional - all required features work flawlessly as
+   far as I can tell. It includes error checking for invalid commands and a series
+   of macros to make the language usable without any racket syntax or keyword
+   involvement. In the event of bad code, it will either throw the appropriate error
+   (e.g. "error: bad conditional command JMPOBJ") or will yield a syntax error.
+
+3. I changed a few things in my design since the original design submission, most
+   notably in the removal of GOTO/LABEL and the extraction of conditional commands
+   where relevant. GOTO/LABEL were removed as their implementation would've been tough
+   and they were ultimately unnecessary (plus a late night code comment "hello again
+   spaghetti" recovered in the morning gave me an idea of where this would lead).
+   Conditional commands were ultimately extracted into a separate category of structs
+   "condcmd" for clarity. Additionally, the command "NOT" was added to clear up cases
+   where checking for when something is *not* the case applies.
+
+4. I am largely satisfied with my interpreter. I believe a few things could be a bit
+   cleaner ("exec-cmd" in particular makes me cringe, but the alternative of extracting
+   helper functions from it is worse), but the code is mostly good in my humble opinion.
+   I regret that I was unable to add more break conditions (like "break when object <x>
+   arrives at point y"), but I feel that loss is somewhat compensated by the
+   macro-generating macro I wrote for defining the deracketified syntax of my language.
+
+   I almost wrote the definition for that macro-generating macro in terms of itself, but
+   right about then I came down with a killer headache. Can't figure out why. Oh well.
+
+|#
 
 
 ; =====================
@@ -13,12 +47,11 @@
 ;  -(make-JMPOBJ symbol number number)		-Jump gobject to x,y
 ;  -(make-JMPOBJRAND symbol)			-Jump gobject to random coords
 ;  -(make-STOPOBJ symbol)			        -Stop gobject from movement
-;  -(make-ADDOBJ symbol)			        -Add gobject
+;  -(make-ADDOBJ gobject)			        -Add gobject
 ;  -(make-UDTOBJ symbol)			        -Update gobject
 ;  -(make-DELOBJ symbol)			        -Delete gobject
 ;  -(make-WHILE condcmd list[cmd])		        -Do while cmd returns true
 ;  -(make-IFCOND condcmd list[cmd] list[cmd])	-If cmd returns true, execute first cmdlist, otherwise the second cmdlist
-;
 ;
 ; A condcmd is one of
 ;  -(make-COLLIDE? symbol symbol)
@@ -29,6 +62,7 @@
 ;  -(make-GENCIRCLE number symbol)
 ;  -(make-GENRECT number number symbol)
 
+; Note: as all structs here are very simple, templates have been omitted.
 
 ; A JMPOBJ is (make-JMPOBJ symbol number number)
 (define-struct JMPOBJ (obj nx ny))
@@ -155,14 +189,14 @@
                 mem)))
 
 
-; =============================
-; INTERPRETER FUNCTIONS
-; (for real this time!)
+;; =============================
+;; INTERPRETER FUNCTIONS
+;; (for real this time!)
 
-
+;; Constants - change these to change general animation parameters.
 (define WIN_X 800)
 (define WIN_Y 600)
-(define SKIPTIME 0.016)
+(define SKIPTIME 0.016) ; How many seconds to skip between frames
 
 
 ;; run-animation: list[cmd] -> void
@@ -238,7 +272,7 @@
 ;; Note: EDGECOLLIDE defines its edges as 10px inside the actual window border.
 (check-expect (eval-condcmd true) true)
 (check-expect (eval-condcmd false) false)
-(check-expect (eval-condcmd (make-NOTCOND false)) true) ; Can't check either COLLIDE because they involve a global variable
+(check-expect (eval-condcmd (make-NOTCOND false)) true)
 (define (eval-condcmd cmd)
   (cond [(boolean? cmd)
          cmd]
@@ -251,7 +285,9 @@
           (< (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))) 10 )
           (> (gobject-posy (get-gobject (EDGECOLLIDE?-obj cmd))) (- WIN_Y 10)))]
         [(COLLIDE?? cmd) 
-         (overlap? (get-gobject (COLLIDE?-obj1 cmd)) (get-gobject (COLLIDE?-obj2 cmd)))]))
+         (overlap? (get-gobject (COLLIDE?-obj1 cmd)) (get-gobject (COLLIDE?-obj2 cmd)))]
+        [else
+         (error (format "invalid conditional command ~a~n" cmd))]))
 
 
 ;; overlap?: gobject gobject -> boolean
@@ -302,7 +338,7 @@
 (define (exec-while cmd)
   (if (eval-condcmd (WHILE-cnd cmd))
       (begin
-        (run-animation (WHILE-cmds cmd)) ; what the f**k?
+        (run-animation (WHILE-cmds cmd))
         (exec-while cmd))
       (void)))
 
@@ -356,33 +392,22 @@
           [orig-form
            new-form] ...))]))
 
-(kw PROGRAM      : [(PROGRAM cmd ...) -> (list cmd ...)]) ; This one is just to obscure the underlying "list" call
-
-(kw DELOBJ       : [(DELOBJ id)  -> (make-DELOBJ 'id)])
-
-(kw UDTOBJ       : [(UDTOBJ id)  -> (make-UDTOBJ 'id)])
-
-(kw STOPOBJ      : [(STOPOBJ id) -> (make-STOPOBJ 'id)])
-
+(kw PROGRAM      : [(PROGRAM cmd ...)   -> (list cmd ...)]) ; This one is just to obscure the underlying "list" call
+(kw DELOBJ       : [(DELOBJ id)         -> (make-DELOBJ 'id)])
+(kw UDTOBJ       : [(UDTOBJ id)         -> (make-UDTOBJ 'id)])
+(kw STOPOBJ      : [(STOPOBJ id)        -> (make-STOPOBJ 'id)])
+(kw JMPOBJ       : [(JMPOBJ id nx ny)   -> (make-JMPOBJ 'id nx ny)])
+(kw JMPOBJRAND   : [(JMPOBJRAND id)     -> (make-JMPOBJRAND 'id)])
+(kw COLLIDE?     : [(COLLIDE? id1 id2)  -> (make-COLLIDE? 'id1 'id2)])
+(kw EDGECOLLIDE? : [(EDGECOLLIDE? id)   -> (make-EDGECOLLIDE? 'id)])
+(kw NOTCOND      : [(NOTCOND condition) -> (make-NOTCOND condition)])
+(kw WHILE        : [(WHILE condition actions ... ) -> (make-WHILE condition (list actions ...))])
+(kw IFCOND       : [(IFCOND condition (ctrueact ...) (cfalseact ...)) ->
+                    (make-IFCOND condition (list ctrueact ...) (list cfalseact ...))])
 (kw ADDOBJ       : [(ADDOBJ name (GENCIRCLE rad col) posx posy velx vely) ->
                     (make-ADDOBJ (make-gobject 'name (make-GENCIRCLE rad 'col) posx posy velx vely))]
                    [(ADDOBJ name (GENRECT w h col) posx posy velx vely) ->
                     (make-ADDOBJ (make-gobject 'name (make-GENRECT w h 'col) posx posy velx vely))])
-
-(kw JMPOBJ       : [(JMPOBJ id nx ny) -> (make-JMPOBJ 'id nx ny)])
-
-(kw JMPOBJRAND   : [(JMPOBJRAND id) -> (make-JMPOBJRAND 'id)])
-
-(kw COLLIDE?     : [(COLLIDE? id1 id2)  -> (make-COLLIDE? 'id1 'id2)])
-
-(kw EDGECOLLIDE? : [(EDGECOLLIDE? id)   -> (make-EDGECOLLIDE? 'id)])
-
-(kw NOTCOND      : [(NOTCOND condition) -> (make-NOTCOND condition)])
-
-(kw WHILE        : [(WHILE condition actions ... ) -> (make-WHILE condition (list actions ...))])
-
-(kw IFCOND       : [(IFCOND condition (ctrueact ...) (cfalseact ...)) ->
-                    (make-IFCOND condition (list ctrueact ...) (list cfalseact ...))])
 
 
 ; ========================
@@ -418,7 +443,8 @@
 
    Note: due to the frame update time here (0.016 seconds, for about 60FPS) the
    purple circle may reach an edge and stop very quickly, or seemingly instantly
-   from the viewer's perspective.
+   from the viewer's perspective. If you want to see this slowed down, change the
+   constant SKIPTIME to a higher number (e.g. 0.5)
 |#
 (define anim-sample2 (PROGRAM
                       (ADDOBJ pcirc (GENCIRCLE 20 purple) 400 300 0 0)
@@ -461,6 +487,7 @@
                              (DELOBJ bcirc))))
 
 
+
 ;; =========================
 ;; || ANIMATION EXECUTION ||
 ;; =========================
@@ -468,4 +495,4 @@
 
 (check-expect (create-canvas WIN_X WIN_Y) true) ; This always outputs an annoying "true" to the console,
 (test)                                          ; so it's a check-expect now.
-(run-animation anim-sample4)
+(run-animation anim-sample3)
